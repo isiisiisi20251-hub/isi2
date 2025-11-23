@@ -181,6 +181,8 @@
     let containerWidth = 0;
     let containerHeight = 0;
     let lastHeightAdjustTime = 0; // 最後に高さ調整した時間
+    let backgroundWidth = 0; // バックグラウンド画像の幅
+    let backgroundHeight = 0; // バックグラウンド画像の高さ
     
     // 各石のテキストボックス情報
     const stoneTextAreas = {
@@ -253,6 +255,19 @@
       // 画面サイズを取得
       containerWidth = document.getElementById('mainContainer').offsetWidth;
       containerHeight = window.innerHeight;
+      
+      // バックグラウンド画像のサイズを取得
+      const bgImage = new Image();
+      bgImage.src = 'src/thread_page/backgound.png';
+      await new Promise((resolve) => {
+        if (bgImage.complete) {
+          resolve();
+        } else {
+          bgImage.onload = resolve;
+        }
+      });
+      backgroundWidth = bgImage.naturalWidth;
+      backgroundHeight = bgImage.naturalHeight;
       
       // キャプション画像の高さを取得
       const captionImg = document.getElementById('captionImage');
@@ -401,9 +416,19 @@
           height: textAreaInfo.height
         };
         
-        // 画面幅に合わせてスケーリング（最大924px、80%サイズ）
-        const maxDisplayWidth = Math.min(containerWidth, 924);
-        const scale = (maxDisplayWidth / originalWidth) * 0.8;
+        // バックグラウンド画像の80%を最大サイズとして設定
+        const maxStoneWidth = backgroundWidth * 0.8;
+        // 画面幅も考慮（小さい方を採用）
+        const maxDisplayWidth = Math.min(maxStoneWidth, containerWidth);
+        
+        // 石画像が最大サイズより大きい場合はリサイズ
+        let scale;
+        if (originalWidth > maxDisplayWidth) {
+          scale = maxDisplayWidth / originalWidth;
+        } else {
+          // 最大サイズより小さい場合はそのままのサイズ
+          scale = 1.0;
+        }
         
         // スケール後の石のサイズ
         const stoneWidth = originalWidth * scale;
