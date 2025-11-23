@@ -37,6 +37,67 @@
       overflow-x: hidden;
     }
     
+    .stone-image-container {
+      position: relative;
+      width: 100%;
+      max-width: 924px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    
+    .stone-image {
+      width: 100%;
+      height: auto;
+      max-width: 924px;
+      display: block;
+    }
+    
+    .comment-area {
+      position: absolute;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    
+    .comment-area::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .comment-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .comment-area::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 2px;
+    }
+    
+    .post-item {
+      color: #333;
+      font-size: 14px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    
+    .post-item .nickname {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .post-item .comment {
+      white-space: pre-wrap;
+      margin-top: 5px;
+    }
+    
+    .post-item .timestamp {
+      color: #999;
+      font-size: 11px;
+      margin-top: 5px;
+    }
+    
     .background {
       position: fixed;
       top: 0;
@@ -167,8 +228,11 @@
     <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
     
     <div class="content-wrapper">
-      <div class="posts-container" id="postsContainer">
-        <!-- 投稿がここに表示されます -->
+      <div class="stone-image-container">
+        <img src="src/stones/stone1.png" alt="石" class="stone-image" id="stoneImage">
+        <div class="comment-area" id="commentArea">
+          <!-- 投稿がここに表示されます -->
+        </div>
       </div>
       
       <div class="caption-container">
@@ -208,6 +272,52 @@
     }
     
     const stoneId = getStoneIdFromUrl();
+    
+    // コメント欄の座標（元画像サイズに対する相対座標）
+    const COMMENT_AREA = {
+      x: 175,
+      y: 139,
+      width: 546,
+      height: 279
+    };
+    
+    // 石画像とコメント欄の位置を調整
+    function adjustStoneAndCommentArea() {
+      const stoneImage = document.getElementById('stoneImage');
+      const commentArea = document.getElementById('commentArea');
+      const mainContainer = document.querySelector('.main-container');
+      
+      if (stoneImage && commentArea && mainContainer) {
+        stoneImage.onload = function() {
+          const naturalWidth = stoneImage.naturalWidth;
+          const naturalHeight = stoneImage.naturalHeight;
+          const containerWidth = mainContainer.offsetWidth;
+          const maxWidth = Math.min(naturalWidth, containerWidth, 924);
+          
+          // スケール比を計算
+          const scale = maxWidth / naturalWidth;
+          
+          // 石画像のサイズを設定
+          stoneImage.style.width = `${maxWidth}px`;
+          stoneImage.style.height = 'auto';
+          
+          // コメント欄の位置とサイズを設定
+          commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
+          commentArea.style.top = `${COMMENT_AREA.y * scale}px`;
+          commentArea.style.width = `${COMMENT_AREA.width * scale}px`;
+          commentArea.style.height = `${COMMENT_AREA.height * scale}px`;
+          
+          // フォントサイズもスケール
+          const baseFontSize = 14;
+          commentArea.style.fontSize = `${baseFontSize * scale}px`;
+        };
+        
+        // 既に読み込まれている場合
+        if (stoneImage.complete) {
+          stoneImage.onload();
+        }
+      }
+    }
     
     // 背景画像のサイズに合わせてcaptionとpost2のサイズを調整
     function adjustImageSizes() {
@@ -254,45 +364,62 @@
         }
         
         const posts = await response.json();
-        const postsContainer = document.getElementById('postsContainer');
+        const commentArea = document.getElementById('commentArea');
         
-        // 時系列順（古い順）にソート
+        if (!commentArea) {
+          console.error('コメント欄が見つかりません');
+          return;
+        }
+        
+        // 時系列順（新しい順）にソート
         posts.sort((a, b) => {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
-          return dateA - dateB;
+          return dateB - dateA;
         });
         
-        // 投稿を表示
-        posts.forEach(post => {
+        // 最新の投稿のみを表示（一つの石に対して一つのコメント）
+        if (posts.length > 0) {
+          const post = posts[0];
           const postElement = document.createElement('div');
           postElement.className = 'post-item';
-          postElement.innerHTML = `
-            <div style="margin-bottom: 10px;">
-              <strong style="color: ${post.pinColor || '#333'};">${post.nickname || '匿名'}</strong>
-              <span style="color: #999; font-size: 12px; margin-left: 10px;">
-                ${new Date(post.createdAt).toLocaleString('ja-JP')}
-              </span>
-            </div>
-            ${post.comment ? `<div style="color: #333; white-space: pre-wrap;">${post.comment}</div>` : ''}
-          `;
-          postsContainer.appendChild(postElement);
-        });
-        
-        // ページ読み込み後に最下部にスクロール
-        setTimeout(() => {
-          scrollToBottom();
-        }, 100);
+          
+          let html = '';
+          if (post.nickname) {
+            html += `<div class="nickname" style="color: ${post.pinColor || '#333'};">${post.nickname}</div>`;
+          }
+          if (post.comment) {
+            html += `<div class="comment">${escapeHtml(post.comment)}</div>`;
+          }
+          if (post.createdAt) {
+            html += `<div class="timestamp">${new Date(post.createdAt).toLocaleString('ja-JP')}</div>`;
+          }
+          
+          postElement.innerHTML = html;
+          commentArea.appendChild(postElement);
+          
+          // コメント欄を最下部にスクロール
+          setTimeout(() => {
+            commentArea.scrollTop = commentArea.scrollHeight;
+          }, 100);
+        }
       } catch (error) {
         console.error('投稿データの読み込みエラー:', error);
       }
     }
     
+    // HTMLエスケープ関数
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
     // 最下部にスクロール
     function scrollToBottom() {
-      const mainContainer = document.querySelector('.main-container');
-      if (mainContainer) {
-        mainContainer.scrollTop = mainContainer.scrollHeight;
+      const commentArea = document.getElementById('commentArea');
+      if (commentArea) {
+        commentArea.scrollTop = commentArea.scrollHeight;
       }
     }
     
@@ -307,11 +434,13 @@
     
     // 画像サイズの調整
     adjustImageSizes();
+    adjustStoneAndCommentArea();
     
     // ページ読み込み後に最下部にスクロール（念のため）
     window.addEventListener('load', () => {
       setTimeout(scrollToBottom, 200);
       adjustImageSizes();
+      adjustStoneAndCommentArea();
     });
     
     // スマホでの全面表示のための高さ設定
@@ -331,12 +460,14 @@
     window.addEventListener('resize', () => {
       setViewportHeight();
       adjustImageSizes();
+      adjustStoneAndCommentArea();
     });
     window.addEventListener('orientationchange', () => {
       setViewportHeight();
       setTimeout(() => {
         scrollToBottom();
         adjustImageSizes();
+        adjustStoneAndCommentArea();
       }, 300);
     });
   </script>
