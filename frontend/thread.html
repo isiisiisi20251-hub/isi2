@@ -507,19 +507,21 @@
         }
         
         // 左右の壁の位置も更新
-        const leftWall = world.bodies.find(b => b.label === 'leftWall');
-        const rightWall = world.bodies.find(b => b.label === 'rightWall');
-        if (leftWall && rightWall) {
-          const container = document.getElementById('canvas-container');
-          const containerHeight = container.scrollHeight || window.innerHeight * 2;
-          Matter.Body.setPosition(leftWall, {
-            x: 0,
-            y: containerHeight / 2
-          });
-          Matter.Body.setPosition(rightWall, {
-            x: containerWidth,
-            y: containerHeight / 2
-          });
+        if (world && world.bodies) {
+          const leftWall = world.bodies.find(b => b.label === 'leftWall');
+          const rightWall = world.bodies.find(b => b.label === 'rightWall');
+          if (leftWall && rightWall) {
+            const container = document.getElementById('canvas-container');
+            const containerHeight = container.scrollHeight || window.innerHeight * 2;
+            Matter.Body.setPosition(leftWall, {
+              x: 0,
+              y: containerHeight / 2
+            });
+            Matter.Body.setPosition(rightWall, {
+              x: containerWidth,
+              y: containerHeight / 2
+            });
+          }
         }
       }
     }
