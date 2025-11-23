@@ -345,7 +345,8 @@
       // 共有画像が読み込まれているか確認
       const createStoneElement = (stoneImg) => {
         // 石のサイズを決定（画像のアスペクト比を保持）
-        const stoneWidth = Math.min(containerWidth * 0.3, 150);
+        // 石を大きくして投稿情報が見やすくなるようにする
+        const stoneWidth = Math.min(containerWidth * 0.5, 250);
         const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
         
         // 落下開始位置（画面上部のランダムな位置、横幅の範囲内）
@@ -396,11 +397,6 @@
         postInfo.style.left = '0';
         postInfo.style.width = '100%';
         postInfo.style.height = '100%';
-        postInfo.style.display = 'flex';
-        postInfo.style.flexDirection = 'column';
-        postInfo.style.justifyContent = 'center';
-        postInfo.style.alignItems = 'center';
-        postInfo.style.padding = '8px';
         postInfo.style.pointerEvents = 'none';
         postInfo.style.userSelect = 'none';
         postInfo.style.zIndex = '10';
@@ -408,16 +404,21 @@
         // 投稿情報の背景（半透明の白）
         const postInfoBg = document.createElement('div');
         postInfoBg.style.position = 'absolute';
-        postInfoBg.style.top = '10%';
-        postInfoBg.style.left = '5%';
-        postInfoBg.style.width = '90%';
+        postInfoBg.style.top = '15%';
+        postInfoBg.style.left = '8%';
+        postInfoBg.style.width = '84%';
         postInfoBg.style.height = 'auto';
-        postInfoBg.style.minHeight = '60%';
-        postInfoBg.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
-        postInfoBg.style.borderRadius = '8px';
-        postInfoBg.style.padding = '6px';
-        postInfoBg.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+        postInfoBg.style.minHeight = '50%';
+        postInfoBg.style.maxHeight = '70%';
+        postInfoBg.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        postInfoBg.style.borderRadius = '10px';
+        postInfoBg.style.padding = `${Math.max(8, stoneWidth * 0.04)}px`;
+        postInfoBg.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.25)';
         postInfoBg.style.pointerEvents = 'none';
+        postInfoBg.style.display = 'flex';
+        postInfoBg.style.flexDirection = 'column';
+        postInfoBg.style.justifyContent = 'center';
+        postInfoBg.style.alignItems = 'center';
         
         // ニックネームとコメントを表示するコンテナ
         const postContent = document.createElement('div');
@@ -426,22 +427,29 @@
         postContent.style.textAlign = 'center';
         postContent.style.wordWrap = 'break-word';
         postContent.style.overflow = 'hidden';
+        postContent.style.display = 'flex';
+        postContent.style.flexDirection = 'column';
+        postContent.style.justifyContent = 'center';
+        postContent.style.alignItems = 'center';
         
         // ニックネームとコメントを表示
         const nicknameDiv = document.createElement('div');
         nicknameDiv.style.fontWeight = 'bold';
-        nicknameDiv.style.fontSize = `${Math.max(10, stoneWidth * 0.08)}px`;
+        nicknameDiv.style.fontSize = `${Math.max(12, stoneWidth * 0.06)}px`;
         nicknameDiv.style.color = '#333';
-        nicknameDiv.style.marginBottom = '4px';
-        nicknameDiv.style.lineHeight = '1.2';
+        nicknameDiv.style.marginBottom = `${Math.max(4, stoneWidth * 0.015)}px`;
+        nicknameDiv.style.lineHeight = '1.3';
+        nicknameDiv.style.wordBreak = 'break-word';
         nicknameDiv.textContent = post.nickname || '匿名';
         
         const commentDiv = document.createElement('div');
-        commentDiv.style.fontSize = `${Math.max(8, stoneWidth * 0.07)}px`;
+        commentDiv.style.fontSize = `${Math.max(10, stoneWidth * 0.05)}px`;
         commentDiv.style.color = '#555';
-        commentDiv.style.lineHeight = '1.3';
-        commentDiv.style.maxHeight = `${stoneHeight * 0.5}px`;
+        commentDiv.style.lineHeight = '1.4';
+        commentDiv.style.maxHeight = `${stoneHeight * 0.4}px`;
         commentDiv.style.overflow = 'hidden';
+        commentDiv.style.wordBreak = 'break-word';
+        commentDiv.style.overflowWrap = 'break-word';
         commentDiv.textContent = post.comment || '';
         
         postContent.appendChild(nicknameDiv);
