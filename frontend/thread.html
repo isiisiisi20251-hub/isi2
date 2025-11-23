@@ -80,7 +80,7 @@
       position: fixed;
       bottom: 0;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(calc(-50% + 5px));
       width: 100%;
       max-width: 924px;
       display: flex;
@@ -126,6 +126,11 @@
       
       .bottom-ui {
         max-width: 100%;
+      }
+      
+      .post-button-container {
+        max-width: 100%;
+        transform: translateX(-50%); /* スマホでは中央揃え */
       }
       
       .post-button img {
