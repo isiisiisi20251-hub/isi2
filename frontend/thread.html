@@ -21,7 +21,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #f5f5f5;
+      background-color: #e8f5e9;
     }
     
     .main-container {
@@ -32,47 +32,242 @@
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      background-color: #e8f5e9;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    
+    .background {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 924px;
+      height: 100%;
+      background-image: url('src/thread_page/backgound.png');
+      background-repeat: repeat-y;
+      background-position: top center;
+      background-size: contain;
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 120px; /* ボタンとcaptionのスペース */
+    }
+    
+    .posts-container {
+      flex: 1;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
     
-    h1 {
-      font-size: 24px;
-      margin-bottom: 30px;
-      color: #333;
+    .caption-container {
+      width: 100%;
+      max-width: 924px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 2;
     }
     
-    .button {
-      padding: 15px 30px;
-      font-size: 18px;
-      background-color: #2196F3;
-      color: white;
+    .caption-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .fixed-post-button {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      max-width: 924px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      background-color: transparent;
+      pointer-events: none;
+    }
+    
+    .fixed-post-button button {
+      background: none;
       border: none;
-      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      padding: 0;
+      pointer-events: auto;
     }
     
-    .button:hover {
-      background-color: #0b7dda;
+    .fixed-post-button img {
+      width: auto;
+      height: 60px;
+      max-width: 200px;
     }
     
+    .fixed-post-button button:active {
+      opacity: 0.8;
+    }
+    
+    /* スマホ向けの最適化（480px以下は100%表示） */
     @media (max-width: 480px) {
       .main-container {
         max-width: 100%;
         width: 100vw;
+      }
+      
+      .background {
+        max-width: 100%;
+      }
+      
+      .fixed-post-button {
+        max-width: 100%;
+      }
+    }
+    
+    /* タブレット向け（481px〜924pxは924pxに制限） */
+    @media (min-width: 481px) and (max-width: 924px) {
+      .main-container {
+        max-width: 924px;
+      }
+      
+      .background {
+        max-width: 924px;
+      }
+      
+      .fixed-post-button {
+        max-width: 924px;
       }
     }
   </style>
 </head>
 <body>
   <div class="main-container">
-    <h1>スレッドページ</h1>
-    <button class="button" onclick="window.location.href='post.html'">投稿へ</button>
+    <div class="background"></div>
+    
+    <div class="content-wrapper">
+      <div class="posts-container" id="postsContainer">
+        <!-- 投稿がここに表示されます -->
+      </div>
+      
+      <div class="caption-container">
+        <img src="src/thread_page/caption.png" alt="キャプション">
+      </div>
+    </div>
+    
+    <div class="fixed-post-button">
+      <button onclick="goToPost()">
+        <img src="src/thread_page/post2.png" alt="投稿">
+      </button>
+    </div>
   </div>
 
   <script>
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000' 
+      : 'https://isi2-backend.onrender.com';
+    
+    // URLパラメータから石IDを取得
+    function getStoneIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stoneId = urlParams.get('stoneId');
+      
+      // URLパラメータがない場合は、ホスト名から取得を試みる
+      if (!stoneId) {
+        const host = window.location.hostname;
+        // isi2.onrender.com → stone-002
+        const match = host.match(/^isi(\d+)/);
+        if (match) {
+          const num = match[1].padStart(3, '0');
+          return `stone-${num}`;
+        }
+      }
+      
+      return stoneId;
+    }
+    
+    const stoneId = getStoneIdFromUrl();
+    
+    // 投稿データを取得して表示
+    async function loadPosts() {
+      if (!stoneId) {
+        console.error('石IDが取得できませんでした');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
+        if (!response.ok) {
+          console.error('投稿データの取得に失敗しました');
+          return;
+        }
+        
+        const posts = await response.json();
+        const postsContainer = document.getElementById('postsContainer');
+        
+        // 時系列順（古い順）にソート
+        posts.sort((a, b) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateA - dateB;
+        });
+        
+        // 投稿を表示
+        posts.forEach(post => {
+          const postElement = document.createElement('div');
+          postElement.className = 'post-item';
+          postElement.innerHTML = `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: ${post.pinColor || '#333'};">${post.nickname || '匿名'}</strong>
+              <span style="color: #999; font-size: 12px; margin-left: 10px;">
+                ${new Date(post.createdAt).toLocaleString('ja-JP')}
+              </span>
+            </div>
+            ${post.comment ? `<div style="color: #333; white-space: pre-wrap;">${post.comment}</div>` : ''}
+          `;
+          postsContainer.appendChild(postElement);
+        });
+        
+        // ページ読み込み後に最下部にスクロール
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
+      } catch (error) {
+        console.error('投稿データの読み込みエラー:', error);
+      }
+    }
+    
+    // 最下部にスクロール
+    function scrollToBottom() {
+      const mainContainer = document.querySelector('.main-container');
+      if (mainContainer) {
+        mainContainer.scrollTop = mainContainer.scrollHeight;
+      }
+    }
+    
+    // 投稿ページへ遷移
+    function goToPost() {
+      const url = stoneId ? `post.html?stoneId=${stoneId}` : 'post.html';
+      window.location.href = url;
+    }
+    
+    // ページ読み込み時に投稿を読み込む
+    loadPosts();
+    
+    // ページ読み込み後に最下部にスクロール（念のため）
+    window.addEventListener('load', () => {
+      setTimeout(scrollToBottom, 200);
+    });
+    
     // スマホでの全面表示のための高さ設定
     function setViewportHeight() {
       const vh = window.innerHeight * 0.01;
@@ -88,8 +283,10 @@
     // 初期設定とリサイズ時の処理
     setViewportHeight();
     window.addEventListener('resize', setViewportHeight);
-    window.addEventListener('orientationchange', setViewportHeight);
+    window.addEventListener('orientationchange', () => {
+      setViewportHeight();
+      setTimeout(scrollToBottom, 300);
+    });
   </script>
 </body>
 </html>
-
