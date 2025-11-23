@@ -182,23 +182,37 @@
   </footer>
 
   <script>
-    // バックエンドAPIのURL（環境変数から取得、またはデフォルト値）
-    const API_BASE_URL = '{{API_BASE_URL}}' || 'http://localhost:3000';
+    // バックエンドAPIのURLを動的に取得
+    // 本番環境では、バックエンドのURLを設定してください
+    // 例: https://your-backend.onrender.com
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000' 
+      : 'https://your-backend.onrender.com'; // ここに実際のバックエンドURLを設定
     
     // 投稿データを取得
     async function loadPosts() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/posts`);
+        console.log('Fetching posts from:', `${API_BASE_URL}/api/posts`);
+        const response = await fetch(`${API_BASE_URL}/api/posts`, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
         if (!response.ok) {
-          throw new Error('投稿の取得に失敗しました');
+          const errorText = await response.text();
+          console.error('Response error:', response.status, errorText);
+          throw new Error(`投稿の取得に失敗しました: ${response.status}`);
         }
+        
         const posts = await response.json();
+        console.log('Posts received:', posts);
         displayPosts(posts);
       } catch (error) {
         console.error('Error loading posts:', error);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'block';
-        document.getElementById('error').textContent = '投稿の読み込みに失敗しました。';
+        document.getElementById('error').textContent = `投稿の読み込みに失敗しました: ${error.message}`;
       }
     }
     
