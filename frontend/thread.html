@@ -47,15 +47,14 @@
     
     .main-container {
       width: 100%;
-      min-height: 100vh;
-      min-height: 100dvh;
       max-width: 924px;
       position: relative;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
       background-color: #e8f5e9;
       overflow-x: hidden;
+      overflow-y: auto;
+      height: 100vh;
+      height: 100dvh;
     }
     
     /* コンテンツが100vhを超える場合でもスクロールできるようにする */
@@ -156,19 +155,15 @@
     .content-wrapper {
       position: relative;
       z-index: 1;
+      width: 100%;
       display: flex;
       flex-direction: column;
-      width: 100%;
-      min-height: 100vh;
-      min-height: 100dvh;
-      flex: 1;
     }
     
     #stonesContainer {
-      flex: 1 1 auto;
+      width: 100%;
       display: flex;
       flex-direction: column;
-      min-height: 0;
     }
     
     .posts-container {
@@ -193,7 +188,6 @@
       background-position: top center;
       background-size: 100% auto;
       flex-shrink: 0;
-      flex-grow: 0;
     }
     
     .caption-container img {
@@ -214,7 +208,6 @@
       padding: 0;
       background-color: transparent;
       flex-shrink: 0;
-      flex-grow: 0;
     }
     
     .fixed-post-button button {
@@ -405,6 +398,7 @@
       const postButton = document.querySelector('.fixed-post-button');
       const captionImage = document.getElementById('captionImage');
       const postButtonImage = document.getElementById('postButtonImage');
+      const contentWrapper = document.getElementById('contentWrapper');
       
       if (captionContainer && captionImage) {
         // captionの幅を設定
@@ -420,6 +414,11 @@
         // post2の幅を設定
         postButtonImage.style.width = `${calcData.maxWidth}px`;
         postButtonImage.style.maxWidth = `${calcData.maxWidth}px`;
+      }
+      
+      // コンテンツラッパーの高さを設定（必要な背景枚数分）
+      if (contentWrapper && calcData.bgCount) {
+        contentWrapper.style.minHeight = `${calcData.bgCount * calcData.scaledBgHeight}px`;
       }
     }
     
@@ -656,6 +655,8 @@
         // 背景の高さを再計算
         setTimeout(() => {
           calculateBackgroundHeight();
+          // 画面ロード時の初期位置を一番下に
+          scrollToBottom();
         }, 500);
       } catch (error) {
         console.error('投稿データの読み込みエラー:', error);
@@ -673,7 +674,10 @@
     function scrollToBottom() {
       const mainContainer = document.querySelector('.main-container');
       if (mainContainer) {
-        mainContainer.scrollTop = mainContainer.scrollHeight;
+        // 少し遅延を入れて確実にスクロール
+        setTimeout(() => {
+          mainContainer.scrollTop = mainContainer.scrollHeight;
+        }, 100);
       }
     }
     
@@ -693,13 +697,10 @@
     // ページ読み込み後に最下部にスクロール（念のため）
     window.addEventListener('load', () => {
       setTimeout(() => {
-        const mainContainer = document.querySelector('.main-container');
-        if (mainContainer) {
-          mainContainer.scrollTop = mainContainer.scrollHeight;
-        }
         adjustImageSizes();
         calculateBackgroundHeight();
-      }, 200);
+        scrollToBottom();
+      }, 500);
     });
     
     // スマホでの全面表示のための高さ設定
