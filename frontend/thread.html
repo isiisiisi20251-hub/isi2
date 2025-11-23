@@ -51,6 +51,20 @@
       background-size: 100% auto;
     }
     
+    .caption-image-loader {
+      position: absolute;
+      visibility: hidden;
+      width: 0;
+      height: 0;
+    }
+    
+    .stone-image-loader {
+      position: absolute;
+      visibility: hidden;
+      width: 0;
+      height: 0;
+    }
+    
     .stone-image {
       width: 100%;
       height: auto;
@@ -216,6 +230,8 @@
 <body>
   <div class="main-container">
     <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
+    <img src="src/thread_page/caption.png" alt="" class="caption-image-loader" id="captionImageLoader">
+    <img src="src/stones/stone1.png" alt="" class="stone-image-loader" id="stoneImageLoader">
     
     <div class="content-wrapper" id="contentWrapper">
       <div class="stone-image-container">
@@ -271,6 +287,68 @@
       height: 279
     };
     
+    // 背景画像の必要な高さを計算して設定
+    function calculateBackgroundHeight() {
+      const bgImageLoader = document.getElementById('bgImageLoader');
+      const captionImageLoader = document.getElementById('captionImageLoader');
+      const stoneImageLoader = document.getElementById('stoneImageLoader');
+      const stoneImage = document.getElementById('stoneImage');
+      const captionImage = document.getElementById('captionImage');
+      const stoneContainer = document.querySelector('.stone-image-container');
+      const mainContainer = document.querySelector('.main-container');
+      
+      if (!bgImageLoader || !captionImageLoader || !stoneImageLoader || 
+          !stoneImage || !captionImage || !stoneContainer || !mainContainer) {
+        return;
+      }
+      
+      // すべての画像が読み込まれるまで待つ
+      const checkAllLoaded = () => {
+        if (bgImageLoader.complete && captionImageLoader.complete && 
+            stoneImageLoader.complete && stoneImage.complete && captionImage.complete) {
+          const containerWidth = mainContainer.offsetWidth;
+          const maxWidth = Math.min(924, containerWidth);
+          
+          // 各画像のスケール比を計算
+          const bgWidth = bgImageLoader.naturalWidth;
+          const bgHeight = bgImageLoader.naturalHeight;
+          const bgScale = maxWidth / bgWidth;
+          
+          const stoneWidth = stoneImageLoader.naturalWidth;
+          const stoneHeight = stoneImageLoader.naturalHeight;
+          const stoneScale = maxWidth / stoneWidth;
+          
+          const captionWidth = captionImageLoader.naturalWidth;
+          const captionHeight = captionImageLoader.naturalHeight;
+          const captionScale = maxWidth / captionWidth;
+          
+          // スケール後の高さを計算
+          const scaledStoneHeight = stoneHeight * stoneScale;
+          const scaledCaptionHeight = captionHeight * captionScale;
+          const scaledBgHeight = bgHeight * bgScale;
+          
+          // 必要な高さ = 石の高さ + キャプションの高さ
+          const totalHeight = scaledStoneHeight + scaledCaptionHeight;
+          
+          // 必要な背景画像の個数を計算（切り上げ）
+          const bgCount = Math.ceil(totalHeight / scaledBgHeight);
+          
+          // 石コンテナの高さを設定（背景が十分に表示されるように）
+          stoneContainer.style.minHeight = `${bgCount * scaledBgHeight}px`;
+        }
+      };
+      
+      // 画像読み込みイベントを設定
+      bgImageLoader.onload = checkAllLoaded;
+      captionImageLoader.onload = checkAllLoaded;
+      stoneImageLoader.onload = checkAllLoaded;
+      stoneImage.onload = checkAllLoaded;
+      captionImage.onload = checkAllLoaded;
+      
+      // 既に読み込まれている場合
+      checkAllLoaded();
+    }
+    
     // 石画像とコメント欄の位置を調整
     function adjustStoneAndCommentArea() {
       const stoneImage = document.getElementById('stoneImage');
@@ -292,10 +370,6 @@
           stoneImage.style.width = `${maxWidth}px`;
           stoneImage.style.height = 'auto';
           
-          // 石コンテナの高さを石画像の高さに合わせる
-          const stoneHeight = naturalHeight * scale;
-          stoneContainer.style.minHeight = `${stoneHeight}px`;
-          
           // コメント欄の位置とサイズを設定
           commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
           commentArea.style.top = `${COMMENT_AREA.y * scale}px`;
@@ -305,6 +379,9 @@
           // フォントサイズもスケール
           const baseFontSize = 14;
           commentArea.style.fontSize = `${baseFontSize * scale}px`;
+          
+          // 背景の高さを再計算
+          calculateBackgroundHeight();
         };
         
         // 既に読み込まれている場合
@@ -335,6 +412,9 @@
           captionImage.style.maxWidth = `${maxWidth}px`;
           postButtonImage.style.width = `${maxWidth}px`;
           postButtonImage.style.maxWidth = `${maxWidth}px`;
+          
+          // 背景の高さを計算
+          calculateBackgroundHeight();
         };
         
         // 既に読み込まれている場合
@@ -430,12 +510,14 @@
     // 画像サイズの調整
     adjustImageSizes();
     adjustStoneAndCommentArea();
+    calculateBackgroundHeight();
     
     // ページ読み込み後に最下部にスクロール（念のため）
     window.addEventListener('load', () => {
       setTimeout(scrollToBottom, 200);
       adjustImageSizes();
       adjustStoneAndCommentArea();
+      calculateBackgroundHeight();
     });
     
     // スマホでの全面表示のための高さ設定
@@ -456,6 +538,7 @@
       setViewportHeight();
       adjustImageSizes();
       adjustStoneAndCommentArea();
+      calculateBackgroundHeight();
     });
     window.addEventListener('orientationchange', () => {
       setViewportHeight();
@@ -463,6 +546,7 @@
         scrollToBottom();
         adjustImageSizes();
         adjustStoneAndCommentArea();
+        calculateBackgroundHeight();
       }, 300);
     });
   </script>
