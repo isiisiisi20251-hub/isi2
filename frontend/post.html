@@ -334,16 +334,9 @@
         
         if (response.ok && result.success) {
           alert('投稿が完了しました');
-          // フォームをリセット
-          document.getElementById('nickname').value = '';
-          document.getElementById('comment').value = '';
-          // マーカーをデフォルト位置に戻す
-          if (marker && map) {
-            const defaultLocation = { lat: 35.7175, lng: 139.7733 };
-            marker.setPosition(defaultLocation);
-            map.setCenter(defaultLocation);
-            selectedLocation = defaultLocation;
-          }
+          // マップページに遷移
+          const url = stoneId ? `map.html?stoneId=${stoneId}` : 'map.html';
+          window.location.href = url;
         } else {
           alert(result.error || '投稿に失敗しました');
         }
