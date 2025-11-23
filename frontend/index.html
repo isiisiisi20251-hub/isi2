@@ -70,6 +70,23 @@
   </div>
 
   <script>
+    // スマホでの全面表示のための高さ設定
+    function setViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const body = document.body;
+      const mainContainer = document.querySelector('.main-container');
+      if (body && mainContainer) {
+        body.style.height = `${window.innerHeight}px`;
+        mainContainer.style.height = `${window.innerHeight}px`;
+      }
+    }
+    
+    // 初期設定とリサイズ時の処理
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    
     // 7秒後にmap.htmlへ自動遷移
     setTimeout(() => {
       window.location.href = 'map.html';

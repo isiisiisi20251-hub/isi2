@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>マップ</title>
   <style>
     * {
@@ -14,6 +14,7 @@
     body {
       width: 100vw;
       height: 100vh;
+      height: 100dvh; /* Dynamic Viewport Height for mobile */
       overflow: hidden;
       margin: 0;
       padding: 0;
@@ -83,12 +84,30 @@
 
   <script>
     let map;
+    let markers = []; // マーカーを保存する配列
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
       : 'https://isi2-backend.onrender.com';
     
     // ピンの色の配列
     const pinColors = ['#F17900', '#6466FF', '#00C27E', '#F2DD4E'];
+    
+    // スマホでの全面表示のための高さ設定
+    function setViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const body = document.body;
+      const mainContainer = document.querySelector('.main-container');
+      if (body && mainContainer) {
+        body.style.height = `${window.innerHeight}px`;
+        mainContainer.style.height = `${window.innerHeight}px`;
+      }
+    }
+    
+    // 初期設定とリサイズ時の処理
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
     
     // URLパラメータから石IDを取得
     function getStoneIdFromUrl() {
@@ -111,16 +130,46 @@
     
     const stoneId = getStoneIdFromUrl();
 
+    // ズームレベルに応じたピンのサイズを計算
+    function getPinScale(zoom) {
+      // ズームレベルに応じてサイズを調整（ズームが大きいほどピンも大きくなる）
+      // ズームレベル10-20の範囲で、scale 12-36の範囲にマッピング
+      const minZoom = 10;
+      const maxZoom = 20;
+      const minScale = 12;
+      const maxScale = 36;
+      
+      if (zoom <= minZoom) return minScale;
+      if (zoom >= maxZoom) return maxScale;
+      
+      // 線形補間
+      const ratio = (zoom - minZoom) / (maxZoom - minZoom);
+      return minScale + (maxScale - minScale) * ratio;
+    }
+
     // カスタムマーカーアイコンを作成
-    function createCustomMarkerIcon(color) {
+    function createCustomMarkerIcon(color, zoom) {
+      const scale = getPinScale(zoom || 15);
       return {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 24,
+        scale: scale,
         fillColor: color,
         fillOpacity: 1,
         strokeColor: '#ffffff',
-        strokeWeight: 4
+        strokeWeight: Math.max(3, Math.floor(scale / 6))
       };
+    }
+    
+    // ズーム変更時にマーカーのサイズを更新
+    function updateMarkerSizes() {
+      if (!map) return;
+      const zoom = map.getZoom();
+      markers.forEach((markerData, index) => {
+        if (markerData.marker) {
+          const newIcon = createCustomMarkerIcon(markerData.color, zoom);
+          markerData.marker.setIcon(newIcon);
+        }
+      });
     }
 
     // 投稿データを取得してマーカーを表示
@@ -196,12 +245,21 @@
                 lng: post.postLocationLng
               },
               map: map,
-              icon: createCustomMarkerIcon(color),
+              icon: createCustomMarkerIcon(color, map.getZoom()),
               title: post.nickname || '投稿',
               optimized: false
             });
+            
+            // マーカーを配列に保存
+            markers.push({
+              marker: marker,
+              color: color
+            });
           }, index * 300); // 300ms間隔で表示
         });
+        
+        // ズーム変更イベントリスナーを追加
+        map.addListener('zoom_changed', updateMarkerSizes);
         
       } catch (error) {
         console.error('投稿データの取得エラー:', error);
