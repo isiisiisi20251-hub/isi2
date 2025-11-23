@@ -269,6 +269,20 @@
     .menu-item:active {
       background-color: #d0d0d0;
     }
+    
+    .menu-item.delete-button {
+      background-color: #dc3545;
+      color: #fff;
+      margin-top: 20px;
+    }
+    
+    .menu-item.delete-button:hover {
+      background-color: #c82333;
+    }
+    
+    .menu-item.delete-button:active {
+      background-color: #bd2130;
+    }
   </style>
 </head>
 <body>
@@ -284,6 +298,7 @@
   <div class="menu-content" id="menuContent">
     <a href="#" class="menu-item" onclick="goToMap(); return false;">マップ</a>
     <a href="#" class="menu-item" onclick="goToPost(); return false;">投稿</a>
+    <a href="#" class="menu-item delete-button" onclick="clearAllData(); return false;">全データ削除（デバッグ用）</a>
   </div>
   
   <div class="main-container" id="mainContainer">
@@ -413,6 +428,38 @@
       closeMenu();
       const url = stoneId ? `post.html?stoneId=${stoneId}` : 'post.html';
       window.location.href = url;
+    }
+    
+    // 全データ削除（デバッグ用）
+    async function clearAllData() {
+      if (!confirm('本当に全データを削除しますか？この操作は取り消せません。')) {
+        return;
+      }
+      
+      if (!confirm('本当によろしいですか？全投稿と石データが削除されます。')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/debug/clear-all`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          throw new Error('データ削除に失敗しました');
+        }
+        
+        const result = await response.json();
+        alert(`削除完了\n削除された投稿: ${result.deletedPosts}件\n削除された石: ${result.deletedStones}件`);
+        
+        // ページをリロードして反映
+        location.reload();
+      } catch (error) {
+        console.error('データ削除エラー:', error);
+        alert('データ削除に失敗しました: ' + error.message);
+      }
+      
+      closeMenu();
     }
     
     // 初期化

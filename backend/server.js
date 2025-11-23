@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // CORS設定（フロントエンドからのアクセスを許可）
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -254,6 +254,27 @@ app.get('/api/debug/posts', async (req, res) => {
   } catch (error) {
     console.error('投稿取得エラー:', error);
     res.status(500).json({ error: '投稿データの取得に失敗しました' });
+  }
+});
+
+// 全データ削除（デバッグ用）
+app.delete('/api/debug/clear-all', async (req, res) => {
+  try {
+    // まず投稿データを削除（外部キー制約があるため先に削除）
+    const postsResult = await pool.query('DELETE FROM posts');
+    
+    // 次に石データを削除
+    const stonesResult = await pool.query('DELETE FROM stones');
+    
+    res.json({ 
+      success: true, 
+      message: '全データを削除しました',
+      deletedPosts: postsResult.rowCount,
+      deletedStones: stonesResult.rowCount
+    });
+  } catch (error) {
+    console.error('データ削除エラー:', error);
+    res.status(500).json({ error: 'データの削除に失敗しました' });
   }
 });
 
