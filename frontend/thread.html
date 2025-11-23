@@ -180,8 +180,44 @@
     let captionHeight = 0;
     let containerWidth = 0;
     let containerHeight = 0;
-    let sharedStoneImage = null; // 共有する石の画像
     let lastHeightAdjustTime = 0; // 最後に高さ調整した時間
+    
+    // 各石のテキストボックス情報
+    const stoneTextAreas = {
+      'stone1.png': [{
+        x: 175,
+        y: 139,
+        width: 546,
+        height: 279
+      }],
+      'stone2.png': [{
+        x: 199,
+        y: 190,
+        width: 546,
+        height: 279
+      }],
+      'stone3.png': [{
+        x: 115,
+        y: 213,
+        width: 545,
+        height: 279
+      }],
+      'stone4.png': [{
+        x: 220,
+        y: 178,
+        width: 545,
+        height: 278
+      }]
+    };
+    
+    // 利用可能な石画像のリスト
+    const availableStones = ['stone1.png', 'stone2.png', 'stone3.png', 'stone4.png'];
+    
+    // ランダムに石画像を選択
+    function getRandomStone() {
+      const randomIndex = Math.floor(Math.random() * availableStones.length);
+      return availableStones[randomIndex];
+    }
     
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
@@ -238,9 +274,7 @@
       // 物理演算のタイムステップを調整（スマホでのパフォーマンス向上）
       engine.timing.timeScale = 1;
       
-      // 石の画像を1回だけ読み込む（共有）
-      sharedStoneImage = new Image();
-      sharedStoneImage.src = 'src/stones/stone1.png';
+      // 石の画像は各投稿ごとにランダムに選択されるため、ここでは初期化しない
       
       // レンダラーの作成（非表示、物理演算のみ）
       const canvas = document.getElementById('physics-canvas');
@@ -342,23 +376,34 @@
     
     // 石を作成
     function createStone(post, index) {
-      // 共有画像が読み込まれているか確認
+      // ランダムに石画像を選択
+      const selectedStoneName = getRandomStone();
+      const stonePath = `src/stones/${selectedStoneName}`;
+      
+      // 選択された石のテキストボックス情報を取得
+      const textAreaInfo = stoneTextAreas[selectedStoneName][0];
+      
+      // 石画像を読み込む
+      const stoneImage = new Image();
+      stoneImage.src = stonePath;
+      
+      // 画像が読み込まれたら石を作成
       const createStoneElement = (stoneImg) => {
         // オリジナルサイズを取得
-        const originalWidth = stoneImg.naturalWidth || 970; // オリジナル幅: 970px
-        const originalHeight = stoneImg.naturalHeight || 567; // オリジナル高さ: 567px
+        const originalWidth = stoneImg.naturalWidth || 970;
+        const originalHeight = stoneImg.naturalHeight || 567;
         
-        // コメントエリアのオリジナル座標（970px幅を基準）
+        // コメントエリアのオリジナル座標（選択された石の情報を使用）
         const commentAreaOriginal = {
-          x: 175,
-          y: 139,
-          width: 546,
-          height: 279
+          x: textAreaInfo.x,
+          y: textAreaInfo.y,
+          width: textAreaInfo.width,
+          height: textAreaInfo.height
         };
         
-        // 画面幅に合わせてスケーリング（最大924px、90%サイズ）
+        // 画面幅に合わせてスケーリング（最大924px、80%サイズ）
         const maxDisplayWidth = Math.min(containerWidth, 924);
-        const scale = (maxDisplayWidth / originalWidth) * 0.9;
+        const scale = (maxDisplayWidth / originalWidth) * 0.8;
         
         // スケール後の石のサイズ
         const stoneWidth = originalWidth * scale;
@@ -498,16 +543,21 @@
           postInfo: postInfo,
           width: stoneWidth,
           height: stoneHeight,
-          post: post
+          post: post,
+          stoneName: selectedStoneName,
+          textArea: textAreaInfo
         });
       };
       
-      // 共有画像が読み込まれている場合は即座に作成、そうでなければ読み込みを待つ
-      if (sharedStoneImage.complete && sharedStoneImage.naturalWidth > 0) {
-        createStoneElement(sharedStoneImage);
+      // 画像が読み込まれている場合は即座に作成、そうでなければ読み込みを待つ
+      if (stoneImage.complete && stoneImage.naturalWidth > 0) {
+        createStoneElement(stoneImage);
       } else {
-        sharedStoneImage.onload = () => {
-          createStoneElement(sharedStoneImage);
+        stoneImage.onload = () => {
+          createStoneElement(stoneImage);
+        };
+        stoneImage.onerror = () => {
+          console.error(`石画像の読み込みに失敗しました: ${stonePath}`);
         };
       }
     }
