@@ -714,18 +714,35 @@
       const currentScrollTop = mainContainer.scrollTop;
       
       let maxY = containerHeight;
+      let minY = 0; // 上方向の最小Y座標
       
       stones.forEach(stone => {
         const y = stone.body.position.y;
-        if (y + stone.height / 2 > maxY) {
-          maxY = y + stone.height / 2;
+        const stoneTop = y - stone.height / 2;
+        const stoneBottom = y + stone.height / 2;
+        
+        // 下方向の最大位置を更新
+        if (stoneBottom > maxY) {
+          maxY = stoneBottom;
+        }
+        
+        // 上方向の最小位置を更新（負の値も考慮）
+        if (stoneTop < minY) {
+          minY = stoneTop;
         }
       });
       
+      // 上方向の余白を確保（石が上から落下するため）
+      const topPadding = Math.max(containerHeight, Math.abs(minY) + containerHeight * 0.5);
+      // 下方向の余白を確保
+      const bottomPadding = containerHeight * 0.5;
       // 最低でも2画面分の高さを確保し、石が画面外に出ないように余裕を持たせる
       const minHeight = containerHeight * 2;
-      const newHeight = Math.max(minHeight, maxY + containerHeight * 0.5);
+      const newHeight = Math.max(minHeight, topPadding + maxY + bottomPadding);
+      
+      // コンテナの高さを設定（min-heightとheightの両方を設定）
       container.style.minHeight = `${newHeight}px`;
+      container.style.height = `${newHeight}px`;
       
       // キャンバスの高さも更新
       const canvas = document.getElementById('physics-canvas');
