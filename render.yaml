@@ -11,3 +11,13 @@ services:
         sync: false
       - key: PORT
         value: 10000
+
+  - type: static
+    name: isi2
+    buildCommand: ""
+    staticPublishPath: frontend
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
