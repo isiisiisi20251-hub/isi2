@@ -204,7 +204,6 @@
     let captionHeight = 0;
     let containerWidth = 0;
     let containerHeight = 0;
-    let lastHeightAdjustTime = 0; // 最後に高さ調整した時間
     let backgroundWidth = 0; // バックグラウンド画像の幅
     let backgroundHeight = 0; // バックグラウンド画像の高さ
     let totalPostsCount = 0; // 投稿の総数（上方向パディング計算用）
@@ -379,8 +378,7 @@
         container.scrollTop = container.scrollHeight;
       }, 100);
       
-      // スクロール時にコンテナの高さを調整
-      adjustContainerHeight();
+      // コンテナの高さはすべての石が作成された後に一度だけ設定される
     }
     
     // 上方向のオフセットを計算して設定（石の初期位置を調整するため）
@@ -456,11 +454,26 @@
         topOffset = estimatedTotalStoneHeight * 2 + captionHeight;
         console.log(`事前にtopOffsetを設定: ${topOffset}px (推定石の高さ合計: ${estimatedTotalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
         
-        // 各投稿に対して石を生成（少し遅延させて順番に落下させる）
-        postsWithComments.forEach((post, index) => {
+        // 全ての石を一度に生成（画面上部に待機）
+        const stonePromises = postsWithComments.map((post, index) => {
+          return new Promise((resolve) => {
+            createStone(post, index, resolve);
+          });
+        });
+        
+        // 全ての石が作成されたら、コンテナの高さを計算して固定
+        Promise.all(stonePromises).then(() => {
           setTimeout(() => {
-            createStone(post, index);
-          }, index * 300); // 300ms間隔で落下
+            setTopOffset();
+            adjustContainerHeight();
+            // 1秒ごとに順番に落下させる
+            stones.forEach((stone, index) => {
+        setTimeout(() => {
+                // 重力を有効にする（isStaticをfalseにする）
+                Matter.Body.setStatic(stone.body, false);
+              }, index * 1000); // 1秒間隔で落下
+            });
+          }, 500);
         });
       } catch (error) {
         console.error('投稿データの取得エラー:', error);
@@ -468,7 +481,7 @@
     }
     
     // 石を作成
-    function createStone(post, index) {
+    function createStone(post, index, onComplete) {
       // ランダムに石画像を選択
       const selectedStoneName = getRandomStone();
       // パスを明示的に設定（他の画像と同じ形式）
@@ -530,10 +543,10 @@
         // 石が回転する可能性を考慮して、少し余裕を持たせる
         const margin = stoneWidth * 0.6; // 回転を考慮してマージンを大きく
         const startX = margin + Math.random() * (containerWidth - margin * 2);
-        // 上方向のオフセットを考慮して、石の初期位置を調整
-        const startY = topOffset - stoneHeight - index * 50; // 上から順番に配置
+        // 上方向のオフセットを考慮して、石の初期位置を調整（画面上部に待機）
+        const startY = topOffset + index * (stoneHeight + 20); // 上から順番に配置、少し間隔を空ける
         
-        // Matter.js のボディを作成
+        // Matter.js のボディを作成（初期状態では静止）
         const stoneBody = Matter.Bodies.rectangle(
           startX,
           startY,
@@ -543,6 +556,7 @@
             restitution: 0.3, // 反発係数
             friction: 0.8,
             density: 0.001,
+            isStatic: true, // 初期状態では静止（重力を無効）
             label: `stone-${post.id}`
           }
         );
@@ -660,14 +674,9 @@
           textArea: textAreaInfo
         });
         
-        // すべての石が作成されたかをチェック
-        if (stones.length === totalPostsCount && totalPostsCount > 0) {
-          // すべての石が作成されたので、実際の石の高さを使ってtopOffsetを再計算
-          setTimeout(() => {
-            setTopOffset();
-            // topOffsetが変更された場合、既存の石の位置を調整する必要があるが、
-            // 物理演算が既に開始されているため、位置の微調整はadjustContainerHeightで行われる
-          }, 100); // 少し待ってから設定（すべての石が確実に作成されるように）
+        // 画像の読み込みが完了したことを通知
+        if (onComplete) {
+          onComplete();
         }
       };
       
@@ -680,6 +689,10 @@
         };
         stoneImage.onerror = () => {
           console.error(`石画像の読み込みに失敗しました: ${stonePath}`);
+          // エラー時もコールバックを呼ぶ
+          if (onComplete) {
+            onComplete();
+          }
         };
       }
     }
@@ -757,18 +770,11 @@
         // （コンテナ全体が回転するため、投稿情報も一緒に回転する）
       });
       
-      // コンテナの高さを調整（1秒に1回程度に制限してパフォーマンス向上）
-      const now = Date.now();
-      if (now - lastHeightAdjustTime > 1000) {
-        adjustContainerHeight();
-        lastHeightAdjustTime = now;
-      }
-      
+      // コンテナの高さは初期化時に一度だけ設定されるため、ここでは調整しない
       requestAnimationFrame(updateStones);
     }
     
-    // コンテナの高さを調整（石が画面外に出ないように）
-    // ただし、自動スクロールは発生させない
+    // コンテナの高さを一度だけ計算して固定（すべての石が作成された後に呼ばれる）
     function adjustContainerHeight() {
       const container = document.getElementById('canvas-container');
       const mainContainer = document.getElementById('mainContainer');
@@ -804,7 +810,7 @@
       const minHeight = containerHeight * 2;
       const newHeight = Math.max(minHeight, topPadding + maxY + bottomPadding);
       
-      // コンテナの高さを設定（min-heightとheightの両方を設定）
+      // コンテナの高さを一度だけ設定して固定
       container.style.minHeight = `${newHeight}px`;
       container.style.height = `${newHeight}px`;
       
@@ -839,6 +845,8 @@
       
       // スクロール位置を復元（自動スクロールを防ぐ）
       mainContainer.scrollTop = currentScrollTop;
+      
+      console.log(`コンテナの高さを固定: ${newHeight}px (topPadding: ${topPadding}px, maxY: ${maxY}px)`);
     }
     
     // ビューポートの高さを設定
