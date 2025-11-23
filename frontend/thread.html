@@ -43,6 +43,7 @@
       min-height: 200vh; /* 最低でも2画面分の高さを確保 */
       display: flex;
       flex-direction: column;
+      overflow-x: hidden; /* 横方向のスクロールを防ぐ */
     }
     
     #physics-canvas {
@@ -52,6 +53,7 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
+      max-width: 100%; /* 背景の範囲を超えないように */
     }
     
     .caption-container {
@@ -104,6 +106,7 @@
       position: absolute;
       pointer-events: none;
       user-select: none;
+      max-width: 100%; /* 背景の範囲を超えないように */
     }
     
     /* スマホ向けの最適化（480px以下は100%表示） */
@@ -163,6 +166,8 @@
     let captionHeight = 0;
     let containerWidth = 0;
     let containerHeight = 0;
+    let sharedStoneImage = null; // 共有する石の画像
+    let lastHeightAdjustTime = 0; // 最後に高さ調整した時間
     
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
@@ -215,6 +220,13 @@
       world = engine.world;
       engine.world.gravity.y = 0.8; // 重力の強さ
       engine.world.gravity.scale = 0.001;
+      
+      // 物理演算のタイムステップを調整（スマホでのパフォーマンス向上）
+      engine.timing.timeScale = 1;
+      
+      // 石の画像を1回だけ読み込む（共有）
+      sharedStoneImage = new Image();
+      sharedStoneImage.src = 'src/stones/stone1.png';
       
       // レンダラーの作成（非表示、物理演算のみ）
       const canvas = document.getElementById('physics-canvas');
@@ -316,11 +328,8 @@
     
     // 石を作成
     function createStone(post, index) {
-      // 石の画像を読み込む
-      const stoneImg = new Image();
-      stoneImg.src = 'src/stones/stone1.png';
-      
-      stoneImg.onload = () => {
+      // 共有画像が読み込まれているか確認
+      const createStoneElement = (stoneImg) => {
         // 石のサイズを決定（画像のアスペクト比を保持）
         const stoneWidth = Math.min(containerWidth * 0.3, 150);
         const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
@@ -346,13 +355,14 @@
         
         Matter.World.add(world, stoneBody);
         
-        // 石の画像要素を作成
+        // 石の画像要素を作成（共有画像を使用）
         const stoneElement = document.createElement('img');
         stoneElement.src = stoneImg.src;
         stoneElement.className = 'stone-image';
         stoneElement.style.width = `${stoneWidth}px`;
         stoneElement.style.height = `${stoneHeight}px`;
         stoneElement.style.display = 'block';
+        stoneElement.loading = 'lazy'; // 遅延読み込み
         
         // 投稿情報を表示するためのdivを作成
         const postInfo = document.createElement('div');
@@ -394,13 +404,26 @@
           height: stoneHeight,
           post: post
         });
-        
-        stoneImages.push(stoneImg);
       };
+      
+      // 共有画像が読み込まれている場合は即座に作成、そうでなければ読み込みを待つ
+      if (sharedStoneImage.complete) {
+        createStoneElement(sharedStoneImage);
+      } else {
+        sharedStoneImage.onload = () => {
+          createStoneElement(sharedStoneImage);
+        };
+      }
     }
     
     // 石の位置を更新
     function updateStones() {
+      const mainContainer = document.getElementById('mainContainer');
+      const scrollTop = mainContainer.scrollTop;
+      const viewportHeight = window.innerHeight;
+      const viewportTop = scrollTop;
+      const viewportBottom = scrollTop + viewportHeight;
+      
       stones.forEach(stone => {
         const body = stone.body;
         const element = stone.element;
@@ -411,12 +434,30 @@
         const y = body.position.y;
         const angle = body.angle;
         
+        // 画面外の石は更新をスキップ（パフォーマンス向上）
+        const stoneTop = y - stone.height / 2;
+        const stoneBottom = y + stone.height / 2;
+        const isVisible = (stoneBottom >= viewportTop - 200) && (stoneTop <= viewportBottom + 200);
+        
+        if (!isVisible && element.style.display !== 'none') {
+          element.style.display = 'none';
+          return;
+        }
+        
+        if (isVisible && element.style.display === 'none') {
+          element.style.display = 'block';
+        }
+        
         // 石が左右の壁の範囲内に収まるように制限
         const margin = stone.width / 2;
         x = Math.max(margin, Math.min(containerWidth - margin, x));
         
-        // 画像要素の位置を更新
-        element.style.left = `${x - stone.width / 2}px`;
+        // Matter.jsのボディの位置も更新（物理演算の整合性を保つ）
+        Matter.Body.setPosition(body, { x: x, y: y });
+        
+        // 画像要素の位置を更新（背景の範囲内に収まるように）
+        const leftPosition = Math.max(0, x - stone.width / 2);
+        element.style.left = `${leftPosition}px`;
         element.style.top = `${y - stone.height / 2}px`;
         element.style.transform = `rotate(${angle}rad)`;
         element.style.transformOrigin = 'center center';
@@ -428,8 +469,12 @@
         postInfo.style.transformOrigin = 'center center';
       });
       
-      // コンテナの高さを調整（自動スクロールは発生させない）
-      adjustContainerHeight();
+      // コンテナの高さを調整（1秒に1回程度に制限してパフォーマンス向上）
+      const now = Date.now();
+      if (now - lastHeightAdjustTime > 1000) {
+        adjustContainerHeight();
+        lastHeightAdjustTime = now;
+      }
       
       requestAnimationFrame(updateStones);
     }
