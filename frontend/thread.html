@@ -45,6 +45,10 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
+      background-image: url('src/thread_page/backgound.png');
+      background-repeat: repeat-y;
+      background-position: top center;
+      background-size: 100% auto;
     }
     
     .stone-image {
@@ -52,6 +56,8 @@
       height: auto;
       max-width: 924px;
       display: block;
+      position: relative;
+      z-index: 1;
     }
     
     .comment-area {
@@ -60,6 +66,7 @@
       overflow-x: hidden;
       padding: 10px;
       box-sizing: border-box;
+      z-index: 2;
     }
     
     .comment-area::-webkit-scrollbar {
@@ -96,22 +103,6 @@
       color: #999;
       font-size: 11px;
       margin-top: 5px;
-    }
-    
-    .background {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 924px;
-      height: 100%;
-      background-image: url('src/thread_page/backgound.png');
-      background-repeat: repeat-y;
-      background-position: top center;
-      background-size: 100% auto;
-      z-index: 0;
-      pointer-events: none;
     }
     
     .background-image-loader {
@@ -197,7 +188,7 @@
         width: 100vw;
       }
       
-      .background {
+      .stone-image-container {
         max-width: 100%;
       }
       
@@ -212,7 +203,7 @@
         max-width: 924px;
       }
       
-      .background {
+      .stone-image-container {
         max-width: 924px;
       }
       
@@ -224,10 +215,9 @@
 </head>
 <body>
   <div class="main-container">
-    <div class="background"></div>
     <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
     
-    <div class="content-wrapper">
+    <div class="content-wrapper" id="contentWrapper">
       <div class="stone-image-container">
         <img src="src/stones/stone1.png" alt="石" class="stone-image" id="stoneImage">
         <div class="comment-area" id="commentArea">
@@ -285,9 +275,10 @@
     function adjustStoneAndCommentArea() {
       const stoneImage = document.getElementById('stoneImage');
       const commentArea = document.getElementById('commentArea');
+      const stoneContainer = document.querySelector('.stone-image-container');
       const mainContainer = document.querySelector('.main-container');
       
-      if (stoneImage && commentArea && mainContainer) {
+      if (stoneImage && commentArea && stoneContainer && mainContainer) {
         stoneImage.onload = function() {
           const naturalWidth = stoneImage.naturalWidth;
           const naturalHeight = stoneImage.naturalHeight;
@@ -300,6 +291,10 @@
           // 石画像のサイズを設定
           stoneImage.style.width = `${maxWidth}px`;
           stoneImage.style.height = 'auto';
+          
+          // 石コンテナの高さを石画像の高さに合わせる
+          const stoneHeight = naturalHeight * scale;
+          stoneContainer.style.minHeight = `${stoneHeight}px`;
           
           // コメント欄の位置とサイズを設定
           commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
