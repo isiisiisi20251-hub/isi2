@@ -20,7 +20,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #f5f5f5;
+      background-color: #e8f5e9;
     }
     
     .main-container {
@@ -31,44 +31,302 @@
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
+      background-color: #e8f5e9;
+      overflow-y: auto;
     }
     
-    h1 {
-      font-size: 24px;
-      margin-bottom: 30px;
-      color: #333;
-    }
-    
-    .button {
-      padding: 15px 30px;
-      font-size: 18px;
-      background-color: #FF9800;
-      color: white;
+    .back-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #9e9e9e;
       border: none;
-      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      transition: background-color 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
-    .button:hover {
-      background-color: #e68900;
+    .back-button::before {
+      content: '←';
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
     }
     
+    .back-button-text {
+      margin-left: 45px;
+      margin-top: 10px;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .map-container {
+      width: 100%;
+      height: 60vh;
+      min-height: 300px;
+      margin-top: 60px;
+      position: relative;
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .form-container {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .input-group label {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+    
+    .input-group input,
+    .input-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      font-family: inherit;
+      background-color: white;
+    }
+    
+    .input-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .submit-button-container {
+      display: flex;
+      justify-content: center;
+      padding: 20px 0;
+    }
+    
+    .submit-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    
+    .submit-button img {
+      width: auto;
+      height: 50px;
+      max-width: 200px;
+    }
+    
+    .submit-button:active {
+      opacity: 0.8;
+    }
+    
+    /* スマホ向けの最適化（480px以下は100%表示） */
     @media (max-width: 480px) {
       .main-container {
         max-width: 100%;
         width: 100vw;
+      }
+      
+      .map-container {
+        height: 50vh;
+        min-height: 250px;
+      }
+      
+      .form-container {
+        padding: 15px;
+      }
+    }
+    
+    /* タブレット向け（481px〜924pxは924pxに制限） */
+    @media (min-width: 481px) and (max-width: 924px) {
+      .main-container {
+        max-width: 924px;
       }
     }
   </style>
 </head>
 <body>
   <div class="main-container">
-    <h1>投稿ページ</h1>
-    <p style="margin-bottom: 20px; color: #666;">プレースホルダー</p>
+    <button class="back-button" onclick="goBack()" aria-label="戻る"></button>
+    <span class="back-button-text">もどる</span>
+    
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+    
+    <div class="form-container">
+      <div class="input-group">
+        <label for="nickname">ニックネーム</label>
+        <input type="text" id="nickname" name="nickname" required>
+      </div>
+      
+      <div class="input-group">
+        <label for="comment">コメント</label>
+        <textarea id="comment" name="comment" rows="4"></textarea>
+      </div>
+      
+      <div class="submit-button-container">
+        <button class="submit-button" onclick="submitPost()">
+          <img src="src/post_page/post_button.png" alt="投稿">
+        </button>
+      </div>
+    </div>
   </div>
+
+  <script>
+    let map;
+    let marker;
+    let selectedLocation = null;
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000' 
+      : 'https://isi-backend.onrender.com';
+
+    // Google Maps APIキーを取得して地図を初期化
+    async function initMap() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/google-maps-config`);
+        const config = await response.json();
+        
+        if (!config.apiKey) {
+          console.error('Google Maps APIキーが設定されていません');
+          return;
+        }
+
+        // Google Maps JavaScript APIを動的に読み込む
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&callback=loadMap`;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+        
+        window.loadMap = function() {
+          // デフォルトの位置（東京芸術大学上野キャンパス付近）
+          const defaultLocation = { lat: 35.7175, lng: 139.7733 };
+          
+          const mapOptions = {
+            center: defaultLocation,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false
+          };
+          
+          if (config.mapId) {
+            mapOptions.mapId = config.mapId;
+          }
+          
+          map = new google.maps.Map(document.getElementById('map'), mapOptions);
+          
+          // マーカーを初期位置に配置
+          marker = new google.maps.Marker({
+            position: defaultLocation,
+            map: map,
+            draggable: true,
+            title: '投稿位置'
+          });
+          
+          selectedLocation = defaultLocation;
+          
+          // マーカーの位置変更を監視
+          marker.addListener('dragend', function(event) {
+            selectedLocation = {
+              lat: event.latLng.lat(),
+              lng: event.latLng.lng()
+            };
+          });
+          
+          // 地図のクリックでマーカーを移動
+          map.addListener('click', function(event) {
+            const location = {
+              lat: event.latLng.lat(),
+              lng: event.latLng.lng()
+            };
+            marker.setPosition(location);
+            selectedLocation = location;
+          });
+        };
+      } catch (error) {
+        console.error('地図の初期化エラー:', error);
+      }
+    }
+
+    // 戻るボタンの処理
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = 'map.html';
+      }
+    }
+
+    // 投稿を送信
+    async function submitPost() {
+      const nickname = document.getElementById('nickname').value.trim();
+      const comment = document.getElementById('comment').value.trim();
+      
+      if (!nickname) {
+        alert('ニックネームを入力してください');
+        return;
+      }
+      
+      try {
+        const postData = {
+          nickname: nickname,
+          comment: comment,
+          postLocation: selectedLocation
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/api/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(postData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          alert('投稿が完了しました');
+          // フォームをリセット
+          document.getElementById('nickname').value = '';
+          document.getElementById('comment').value = '';
+          // マーカーをデフォルト位置に戻す
+          if (marker && map) {
+            const defaultLocation = { lat: 35.7175, lng: 139.7733 };
+            marker.setPosition(defaultLocation);
+            map.setCenter(defaultLocation);
+            selectedLocation = defaultLocation;
+          }
+        } else {
+          alert(result.error || '投稿に失敗しました');
+        }
+      } catch (error) {
+        console.error('投稿エラー:', error);
+        alert('投稿中にエラーが発生しました');
+      }
+    }
+
+    // ページ読み込み時に地図を初期化
+    initMap();
+  </script>
 </body>
 </html>

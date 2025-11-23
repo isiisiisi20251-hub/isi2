@@ -87,6 +87,14 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend API' });
 });
 
+// Google Maps APIキーとMap IDを取得
+app.get('/api/google-maps-config', (req, res) => {
+  res.json({
+    apiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    mapId: process.env.GOOGLE_MAPS_MAP_ID || ''
+  });
+});
+
 // 投稿データを取得（石IDでフィルタリング）
 app.get('/api/posts', async (req, res) => {
   try {
