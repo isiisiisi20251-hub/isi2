@@ -397,15 +397,18 @@
         
         const posts = await response.json();
         
+        // コメントがある投稿のみをフィルタリング（ニックネームだけの投稿は除外）
+        const postsWithComments = posts.filter(post => post.comment && post.comment.trim().length > 0);
+        
         // 時系列順（古い順）にソート
-        posts.sort((a, b) => {
+        postsWithComments.sort((a, b) => {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
           return dateA - dateB;
         });
         
         // 各投稿に対して石を生成（少し遅延させて順番に落下させる）
-        posts.forEach((post, index) => {
+        postsWithComments.forEach((post, index) => {
           setTimeout(() => {
             createStone(post, index);
           }, index * 300); // 300ms間隔で落下
