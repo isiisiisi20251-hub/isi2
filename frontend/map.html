@@ -133,11 +133,11 @@
     // ズームレベルに応じたピンのサイズを計算
     function getPinScale(zoom) {
       // ズームレベルに応じてサイズを調整（ズームが大きいほどピンも大きくなる）
-      // ズームレベル10-20の範囲で、scale 18-54の範囲にマッピング（1.5倍）
+      // ズームレベル10-20の範囲で、scale 12-36の範囲にマッピング（2/3倍）
       const minZoom = 10;
       const maxZoom = 20;
-      const minScale = 18;
-      const maxScale = 54;
+      const minScale = 12;
+      const maxScale = 36;
       
       if (zoom <= minZoom) return minScale;
       if (zoom >= maxZoom) return maxScale;
@@ -234,17 +234,19 @@
           map.setZoom(15);
         }
         
-        // 時系列順にピンを表示（アニメーション）
+        // 時系列順にピンを表示（アニメーション）と線で繋ぐ
         postsWithLocation.forEach((post, index) => {
           // 保存された色を使用、なければデフォルト色
           let color = post.pinColor || pinColors[index % pinColors.length];
           
           setTimeout(() => {
+            const position = {
+              lat: post.postLocationLat,
+              lng: post.postLocationLng
+            };
+            
             const marker = new google.maps.Marker({
-              position: {
-                lat: post.postLocationLat,
-                lng: post.postLocationLng
-              },
+              position: position,
               map: map,
               icon: createCustomMarkerIcon(color, map.getZoom()),
               title: post.nickname || '投稿',
@@ -254,8 +256,26 @@
             // マーカーを配列に保存
             markers.push({
               marker: marker,
-              color: color
+              color: color,
+              position: position
             });
+            
+            // 前のピンから現在のピンへ線を引く（最初のピン以外）
+            if (index > 0) {
+              const previousPost = postsWithLocation[index - 1];
+              const previousColor = previousPost.pinColor || pinColors[(index - 1) % pinColors.length];
+              
+              const polyline = new google.maps.Polyline({
+                path: [
+                  { lat: previousPost.postLocationLat, lng: previousPost.postLocationLng },
+                  position
+                ],
+                strokeColor: previousColor,
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+                map: map
+              });
+            }
           }, index * 300); // 300ms間隔で表示
         });
         
