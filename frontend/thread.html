@@ -216,6 +216,29 @@
       canvas.width = containerWidth;
       canvas.height = containerHeight * 3; // 十分な高さを確保
       
+      // 左右の壁を作成（石が画面外に出ないように）
+      const leftWall = Matter.Bodies.rectangle(
+        0,
+        containerHeight * 1.5,
+        10,
+        containerHeight * 3,
+        {
+          isStatic: true,
+          label: 'leftWall'
+        }
+      );
+      
+      const rightWall = Matter.Bodies.rectangle(
+        containerWidth,
+        containerHeight * 1.5,
+        10,
+        containerHeight * 3,
+        {
+          isStatic: true,
+          label: 'rightWall'
+        }
+      );
+      
       // 地面（キャプション）の作成
       // キャプションはコンテナの最下部に配置されるので、コンテナの高さから計算
       const container = document.getElementById('canvas-container');
@@ -231,7 +254,7 @@
           label: 'ground'
         }
       );
-      Matter.World.add(world, ground);
+      Matter.World.add(world, [ground, leftWall, rightWall]);
       
       // 投稿データを取得して石を生成
       await loadPostsAndCreateStones();
@@ -297,8 +320,9 @@
         const stoneWidth = Math.min(containerWidth * 0.3, 150);
         const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
         
-        // 落下開始位置（画面上部のランダムな位置）
-        const startX = containerWidth * 0.2 + Math.random() * (containerWidth * 0.6);
+        // 落下開始位置（画面上部のランダムな位置、横幅の範囲内）
+        const margin = stoneWidth / 2; // 石の幅の半分をマージンとして確保
+        const startX = margin + Math.random() * (containerWidth - margin * 2);
         const startY = -stoneHeight - index * 50; // 上から順番に配置
         
         // Matter.js のボディを作成
@@ -378,9 +402,13 @@
         const postInfo = stone.postInfo;
         
         // Matter.js の位置を取得
-        const x = body.position.x;
+        let x = body.position.x;
         const y = body.position.y;
         const angle = body.angle;
+        
+        // 石が左右の壁の範囲内に収まるように制限
+        const margin = stone.width / 2;
+        x = Math.max(margin, Math.min(containerWidth - margin, x));
         
         // 画像要素の位置を更新
         element.style.left = `${x - stone.width / 2}px`;
@@ -395,15 +423,21 @@
         postInfo.style.transformOrigin = 'center center';
       });
       
-      // コンテナの高さを調整
+      // コンテナの高さを調整（自動スクロールは発生させない）
       adjustContainerHeight();
       
       requestAnimationFrame(updateStones);
     }
     
     // コンテナの高さを調整（石が画面外に出ないように）
+    // ただし、自動スクロールは発生させない
     function adjustContainerHeight() {
       const container = document.getElementById('canvas-container');
+      const mainContainer = document.getElementById('mainContainer');
+      
+      // 現在のスクロール位置を保存
+      const currentScrollTop = mainContainer.scrollTop;
+      
       let maxY = containerHeight;
       
       stones.forEach(stone => {
@@ -430,6 +464,25 @@
           y: newGroundY
         });
       }
+      
+      // 左右の壁の位置も更新
+      const leftWall = world.bodies.find(b => b.label === 'leftWall');
+      const rightWall = world.bodies.find(b => b.label === 'rightWall');
+      if (leftWall) {
+        Matter.Body.setPosition(leftWall, {
+          x: 0,
+          y: newHeight / 2
+        });
+      }
+      if (rightWall) {
+        Matter.Body.setPosition(rightWall, {
+          x: containerWidth,
+          y: newHeight / 2
+        });
+      }
+      
+      // スクロール位置を復元（自動スクロールを防ぐ）
+      mainContainer.scrollTop = currentScrollTop;
     }
     
     // ビューポートの高さを設定
@@ -450,6 +503,22 @@
           Matter.Body.setPosition(ground, {
             x: containerWidth / 2,
             y: newGroundY
+          });
+        }
+        
+        // 左右の壁の位置も更新
+        const leftWall = world.bodies.find(b => b.label === 'leftWall');
+        const rightWall = world.bodies.find(b => b.label === 'rightWall');
+        if (leftWall && rightWall) {
+          const container = document.getElementById('canvas-container');
+          const containerHeight = container.scrollHeight || window.innerHeight * 2;
+          Matter.Body.setPosition(leftWall, {
+            x: 0,
+            y: containerHeight / 2
+          });
+          Matter.Body.setPosition(rightWall, {
+            x: containerWidth,
+            y: containerHeight / 2
           });
         }
       }
