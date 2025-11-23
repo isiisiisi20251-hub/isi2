@@ -577,32 +577,33 @@
           return;
         }
         
-        // 各投稿ごとに石を作成
-        posts.forEach((post, index) => {
-          // 石コンテナを作成
-          const stoneContainer = document.createElement('div');
-          stoneContainer.className = 'stone-image-container';
-          
-          // 石画像を作成
-          const stoneImage = document.createElement('img');
-          stoneImage.src = 'src/stones/stone1.png';
-          stoneImage.alt = '石';
-          stoneImage.className = 'stone-image';
-          
-          // 要素を組み立て（コメント欄は表示しない）
-          stoneContainer.appendChild(stoneImage);
-          stonesContainer.appendChild(stoneContainer);
-          
-          // 石画像のサイズを調整（画像読み込み後に実行）
-          stoneImage.onload = () => {
-            adjustStoneSize(stoneContainer, stoneImage);
-          };
-          
-          // 既に読み込まれている場合
-          if (stoneImage.complete) {
-            adjustStoneSize(stoneContainer, stoneImage);
-          }
-        });
+        // コメントの石は表示しない
+        // 各投稿ごとに石を作成する処理をコメントアウト
+        // posts.forEach((post, index) => {
+        //   // 石コンテナを作成
+        //   const stoneContainer = document.createElement('div');
+        //   stoneContainer.className = 'stone-image-container';
+        //   
+        //   // 石画像を作成
+        //   const stoneImage = document.createElement('img');
+        //   stoneImage.src = 'src/stones/stone1.png';
+        //   stoneImage.alt = '石';
+        //   stoneImage.className = 'stone-image';
+        //   
+        //   // 要素を組み立て（コメント欄は表示しない）
+        //   stoneContainer.appendChild(stoneImage);
+        //   stonesContainer.appendChild(stoneContainer);
+        //   
+        //   // 石画像のサイズを調整（画像読み込み後に実行）
+        //   stoneImage.onload = () => {
+        //     adjustStoneSize(stoneContainer, stoneImage);
+        //   };
+        //   
+        //   // 既に読み込まれている場合
+        //   if (stoneImage.complete) {
+        //     adjustStoneSize(stoneContainer, stoneImage);
+        //   }
+        // });
         
         // 背景の高さを再計算
         setTimeout(() => {
