@@ -41,6 +41,8 @@
       height: 100%;
       position: relative;
       min-height: 200vh; /* 最低でも2画面分の高さを確保 */
+      display: flex;
+      flex-direction: column;
     }
     
     #physics-canvas {
@@ -52,24 +54,11 @@
       pointer-events: none;
     }
     
-    .bottom-ui {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 924px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 1000;
-      pointer-events: none;
-    }
-    
     .caption-container {
       width: 100%;
       display: flex;
       justify-content: center;
+      margin-top: auto;
       margin-bottom: 0;
     }
     
@@ -81,10 +70,15 @@
     }
     
     .post-button-container {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
       width: 100%;
+      max-width: 924px;
       display: flex;
       justify-content: center;
-      margin-top: 0;
+      z-index: 1001;
       pointer-events: auto;
     }
     
@@ -141,17 +135,15 @@
   <div class="main-container" id="mainContainer">
     <div id="canvas-container">
       <canvas id="physics-canvas"></canvas>
-    </div>
-    
-    <div class="bottom-ui">
       <div class="caption-container">
         <img src="src/thread_page/caption.png" alt="Caption" id="captionImage">
       </div>
-      <div class="post-button-container">
-        <button class="post-button" onclick="goToPost()">
-          <img src="src/thread_page/post2.png" alt="投稿">
-        </button>
-      </div>
+    </div>
+    
+    <div class="post-button-container">
+      <button class="post-button" onclick="goToPost()">
+        <img src="src/thread_page/post2.png" alt="投稿">
+      </button>
     </div>
   </div>
 
@@ -226,7 +218,10 @@
       canvas.height = containerHeight * 3; // 十分な高さを確保
       
       // 地面（キャプション）の作成
-      const groundY = containerHeight - captionHeight;
+      // キャプションはコンテナの最下部に配置されるので、コンテナの高さから計算
+      const container = document.getElementById('canvas-container');
+      const containerScrollHeight = container.scrollHeight || containerHeight * 2;
+      const groundY = containerScrollHeight - captionHeight;
       ground = Matter.Bodies.rectangle(
         containerWidth / 2,
         groundY,
@@ -427,6 +422,15 @@
       // キャンバスの高さも更新
       const canvas = document.getElementById('physics-canvas');
       canvas.height = newHeight;
+      
+      // 地面の位置も更新（キャプションは常にコンテナの最下部）
+      if (ground) {
+        const newGroundY = newHeight - captionHeight;
+        Matter.Body.setPosition(ground, {
+          x: containerWidth / 2,
+          y: newGroundY
+        });
+      }
     }
     
     // ビューポートの高さを設定
@@ -441,8 +445,9 @@
         
         // 地面の位置を更新
         if (ground) {
-          const captionImg = document.getElementById('captionImage');
-          const newGroundY = containerHeight - captionHeight;
+          const container = document.getElementById('canvas-container');
+          const containerScrollHeight = container.scrollHeight || containerHeight * 2;
+          const newGroundY = containerScrollHeight - captionHeight;
           Matter.Body.setPosition(ground, {
             x: containerWidth / 2,
             y: newGroundY
