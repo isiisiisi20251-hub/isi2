@@ -36,6 +36,11 @@
       overflow-x: hidden;
     }
     
+    .main-container * {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    
     #canvas-container {
       width: 100%;
       height: 100%;
@@ -455,8 +460,8 @@
         // Matter.jsのボディの位置も更新（物理演算の整合性を保つ）
         Matter.Body.setPosition(body, { x: x, y: y });
         
-        // 画像要素の位置を更新（背景の範囲内に収まるように）
-        const leftPosition = Math.max(0, x - stone.width / 2);
+        // 画像要素の位置を更新（背景の範囲内に確実に収まるように）
+        const leftPosition = Math.max(0, Math.min(containerWidth - stone.width, x - stone.width / 2));
         element.style.left = `${leftPosition}px`;
         element.style.top = `${y - stone.height / 2}px`;
         element.style.transform = `rotate(${angle}rad)`;
