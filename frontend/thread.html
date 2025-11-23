@@ -356,9 +356,9 @@
           height: 279
         };
         
-        // 画面幅に合わせてスケーリング（最大924px）
+        // 画面幅に合わせてスケーリング（最大924px、90%サイズ）
         const maxDisplayWidth = Math.min(containerWidth, 924);
-        const scale = maxDisplayWidth / originalWidth;
+        const scale = (maxDisplayWidth / originalWidth) * 0.9;
         
         // スケール後の石のサイズ
         const stoneWidth = originalWidth * scale;
