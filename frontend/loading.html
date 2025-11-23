@@ -64,8 +64,6 @@
     async function preloadAndCalculate() {
       if (!stoneId) {
         console.error('石IDが取得できませんでした');
-        // エラー時もthread.htmlに遷移
-        window.location.href = 'thread.html';
         return;
       }
       
@@ -74,7 +72,6 @@
         const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
         if (!response.ok) {
           console.error('投稿データの取得に失敗しました');
-          window.location.href = 'thread.html';
           return;
         }
         
@@ -88,23 +85,42 @@
         sessionStorage.setItem('stoneId', stoneId);
         
         console.log(`事前計算完了: ${postsWithComments.length}件の投稿を読み込み`);
-        
-        // thread.htmlに遷移
-        const redirectUrl = stoneId ? `thread.html?stoneId=${stoneId}` : 'thread.html';
-        window.location.href = redirectUrl;
       } catch (error) {
         console.error('投稿データの取得エラー:', error);
-        // エラー時もthread.htmlに遷移
-        window.location.href = 'thread.html';
       }
     }
     
     // ページ読み込み時に実行
     window.addEventListener('load', () => {
-      // 少し待ってから計算を開始（GIFが表示される時間を確保）
+      let calculationComplete = false;
+      const loadingGif = document.querySelector('.loading-gif');
+      
+      // GIFを7秒間表示しながら、その裏で計算を実行
+      const calculationPromise = preloadAndCalculate().then(() => {
+        calculationComplete = true;
+      });
+      
+      // 7秒経過後、GIFを停止（計算が完了していない場合は表示を続ける）
       setTimeout(() => {
-        preloadAndCalculate();
-      }, 500);
+        if (loadingGif) {
+          // GIFを停止（最後のフレームで止める）
+          loadingGif.src = loadingGif.src; // リロードして停止
+        }
+        
+        // 計算が完了するまで待ってから遷移
+        calculationPromise.then(() => {
+          const redirectUrl = stoneId ? `thread.html?stoneId=${stoneId}` : 'thread.html';
+          if (window.location.pathname.includes('loading.html')) {
+            window.location.href = redirectUrl;
+          }
+        }).catch(() => {
+          // エラー時も遷移
+          const redirectUrl = stoneId ? `thread.html?stoneId=${stoneId}` : 'thread.html';
+          if (window.location.pathname.includes('loading.html')) {
+            window.location.href = redirectUrl;
+          }
+        });
+      }, 7000);
     });
   </script>
 </body>
