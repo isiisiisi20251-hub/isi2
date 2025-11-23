@@ -471,82 +471,79 @@
           return;
         }
       }
+      
+      // 投稿の総数を保存
+      totalPostsCount = postsWithComments.length;
         
-        // 投稿の総数を保存
-        totalPostsCount = postsWithComments.length;
-        
-        // 時系列順（古い順）にソート（事前計算データは既にソート済みの可能性があるが、念のため）
-        postsWithComments.sort((a, b) => {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
-          return dateA - dateB;
-        });
-        
-        // 事前にtopOffsetを計算（平均的な石のサイズを使用）
-        // バックグラウンド画像の実際の表示幅（containerWidth）の60%を最大サイズとして設定
-        const maxDisplayWidth = containerWidth * 0.6;
-        // 平均的な石のサイズ（すべての石画像の平均）
-        const averageOriginalWidth = 970;
-        const averageOriginalHeight = 567;
-        // スケールを計算
-        let scale;
-        if (averageOriginalWidth > maxDisplayWidth) {
-          scale = maxDisplayWidth / averageOriginalWidth;
-        } else {
-          scale = 1.0;
-        }
-        // 平均的な石の高さ
-        const averageStoneHeight = averageOriginalHeight * scale;
-        // すべての石の高さの合計
-        const estimatedTotalStoneHeight = averageStoneHeight * totalPostsCount;
-        // 事前にtopOffsetを設定（石の高さ合計×2倍+caption高さ）
-        topOffset = estimatedTotalStoneHeight * 2 + captionHeight;
-        console.log(`事前にtopOffsetを設定: ${topOffset}px (推定石の高さ合計: ${estimatedTotalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
-        
-        // 全ての石を一度に生成（画面上部に待機）
-        const stonePromises = postsWithComments.map((post, index) => {
-          return new Promise((resolve) => {
-            createStone(post, index, resolve);
-          });
-        });
-        
-        // 全ての石が作成されたら、コンテナの高さを計算して固定
-        Promise.all(stonePromises).then(() => {
-          setTimeout(() => {
-            setTopOffset();
-            adjustContainerHeight();
-            
-            // ローディング画面を非表示にする（事前計算データがある場合は既に表示されていない）
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen && loadingScreen.style.display !== 'none') {
-              loadingScreen.classList.add('hidden');
-              // アニメーション後に完全に削除
-              setTimeout(() => {
-                loadingScreen.style.display = 'none';
-              }, 500);
-            }
-            
-            // コンテナの高さが計算された後、画面下部にスクロール
-            setTimeout(() => {
-              const mainContainer = document.getElementById('mainContainer');
-              mainContainer.scrollTop = mainContainer.scrollHeight;
-              console.log(`初期スクロール位置を画面下部に設定: ${mainContainer.scrollTop}px`);
-            }, 100);
-            
-            // ローディング画面が消えた後、1秒ごとに順番に落下させる
-            // 時系列順（古い順）に落下させるため、indexの順番で実行
-            stones.forEach((stone, index) => {
-              setTimeout(() => {
-                // 重力を有効にする（isStaticをfalseにする）
-                Matter.Body.setStatic(stone.body, false);
-                console.log(`石 ${index} を落下開始`);
-              }, 500 + (index * 1000)); // ローディング画面のフェードアウト後 + 1秒間隔で落下
-            });
-          }, 500);
-        });
-      } catch (error) {
-        console.error('投稿データの取得エラー:', error);
+      // 時系列順（古い順）にソート（事前計算データは既にソート済みの可能性があるが、念のため）
+      postsWithComments.sort((a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateA - dateB;
+      });
+      
+      // 事前にtopOffsetを計算（平均的な石のサイズを使用）
+      // バックグラウンド画像の実際の表示幅（containerWidth）の60%を最大サイズとして設定
+      const maxDisplayWidth = containerWidth * 0.6;
+      // 平均的な石のサイズ（すべての石画像の平均）
+      const averageOriginalWidth = 970;
+      const averageOriginalHeight = 567;
+      // スケールを計算
+      let scale;
+      if (averageOriginalWidth > maxDisplayWidth) {
+        scale = maxDisplayWidth / averageOriginalWidth;
+      } else {
+        scale = 1.0;
       }
+      // 平均的な石の高さ
+      const averageStoneHeight = averageOriginalHeight * scale;
+      // すべての石の高さの合計
+      const estimatedTotalStoneHeight = averageStoneHeight * totalPostsCount;
+      // 事前にtopOffsetを設定（石の高さ合計×2倍+caption高さ）
+      topOffset = estimatedTotalStoneHeight * 2 + captionHeight;
+      console.log(`事前にtopOffsetを設定: ${topOffset}px (推定石の高さ合計: ${estimatedTotalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
+      
+      // 全ての石を一度に生成（画面上部に待機）
+      const stonePromises = postsWithComments.map((post, index) => {
+        return new Promise((resolve) => {
+          createStone(post, index, resolve);
+        });
+      });
+      
+      // 全ての石が作成されたら、コンテナの高さを計算して固定
+      Promise.all(stonePromises).then(() => {
+        setTimeout(() => {
+          setTopOffset();
+          adjustContainerHeight();
+          
+          // ローディング画面を非表示にする（事前計算データがある場合は既に表示されていない）
+          const loadingScreen = document.getElementById('loadingScreen');
+          if (loadingScreen && loadingScreen.style.display !== 'none') {
+            loadingScreen.classList.add('hidden');
+            // アニメーション後に完全に削除
+            setTimeout(() => {
+              loadingScreen.style.display = 'none';
+            }, 500);
+          }
+          
+          // コンテナの高さが計算された後、画面下部にスクロール
+          setTimeout(() => {
+            const mainContainer = document.getElementById('mainContainer');
+            mainContainer.scrollTop = mainContainer.scrollHeight;
+            console.log(`初期スクロール位置を画面下部に設定: ${mainContainer.scrollTop}px`);
+          }, 100);
+          
+          // ローディング画面が消えた後、1秒ごとに順番に落下させる
+          // 時系列順（古い順）に落下させるため、indexの順番で実行
+          stones.forEach((stone, index) => {
+            setTimeout(() => {
+              // 重力を有効にする（isStaticをfalseにする）
+              Matter.Body.setStatic(stone.body, false);
+              console.log(`石 ${index} を落下開始`);
+            }, 500 + (index * 1000)); // ローディング画面のフェードアウト後 + 1秒間隔で落下
+          });
+        }, 500);
+      });
     }
     
     // 石を作成
