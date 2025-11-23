@@ -422,10 +422,9 @@
           height: textAreaInfo.height
         };
         
-        // バックグラウンド画像の80%を最大サイズとして設定
-        const maxStoneWidth = backgroundWidth * 0.8;
-        // 画面幅も考慮（小さい方を採用）
-        const maxDisplayWidth = Math.min(maxStoneWidth, containerWidth);
+        // バックグラウンド画像の実際の表示幅（containerWidth）の80%を最大サイズとして設定
+        // バックグラウンド画像は background-size: 100% auto; で画面幅に合わせてスケールされている
+        const maxDisplayWidth = containerWidth * 0.8;
         
         // 石画像が最大サイズより大きい場合はリサイズ
         let scale;
@@ -435,6 +434,9 @@
           // 最大サイズより小さい場合はそのままのサイズ
           scale = 1.0;
         }
+        
+        // デバッグ用: サイズ計算をログ出力
+        console.log(`石画像サイズ計算: オリジナル幅=${originalWidth}px, 最大表示幅=${maxDisplayWidth}px, スケール=${scale.toFixed(3)}`);
         
         // スケール後の石のサイズ
         const stoneWidth = originalWidth * scale;
