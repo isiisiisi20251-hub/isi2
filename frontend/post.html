@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>石の掲示板</title>
+  <title>投稿</title>
   <style>
     * {
       margin: 0;
@@ -20,7 +20,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #000;
+      background-color: #f5f5f5;
     }
     
     .main-container {
@@ -30,14 +30,31 @@
       position: relative;
       margin: 0 auto;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
     
-    .opening-gif {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
+    h1 {
+      font-size: 24px;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    
+    .button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #FF9800;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .button:hover {
+      background-color: #e68900;
     }
     
     @media (max-width: 480px) {
@@ -50,14 +67,8 @@
 </head>
 <body>
   <div class="main-container">
-    <img src="src/gif/opening.gif" alt="Opening" class="opening-gif" id="openingGif">
+    <h1>投稿ページ</h1>
+    <p style="margin-bottom: 20px; color: #666;">プレースホルダー</p>
   </div>
-
-  <script>
-    // 7秒後にmap.htmlへ自動遷移
-    setTimeout(() => {
-      window.location.href = 'map.html';
-    }, 7000);
-  </script>
 </body>
 </html>
