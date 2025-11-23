@@ -217,7 +217,9 @@
     
     // ランダムに石画像を選択
     function getRandomStone() {
-      const randomIndex = Math.floor(Math.random() * availableStones.length);
+      // 確実にランダムに選択するため、現在時刻も考慮
+      const randomValue = Math.random() + Date.now() % 1000 / 10000;
+      const randomIndex = Math.floor(randomValue * availableStones.length) % availableStones.length;
       return availableStones[randomIndex];
     }
     
@@ -393,7 +395,11 @@
     function createStone(post, index) {
       // ランダムに石画像を選択
       const selectedStoneName = getRandomStone();
+      // パスを明示的に設定（他の画像と同じ形式）
       const stonePath = `src/stones/${selectedStoneName}`;
+      
+      // デバッグ用: 選択された石をログ出力
+      console.log(`投稿 ${index}: ${selectedStoneName} を選択 (パス: ${stonePath})`);
       
       // 選択された石のテキストボックス情報を取得
       const textAreaInfo = stoneTextAreas[selectedStoneName][0];
