@@ -70,6 +70,7 @@
       background-repeat: repeat-y;
       background-position: top center;
       background-size: 100% auto;
+      min-width: 0;
     }
     
     .caption-image-loader {
@@ -93,6 +94,7 @@
       display: block;
       position: relative;
       z-index: 1;
+      min-width: 0;
     }
     
     .comment-area {
@@ -103,6 +105,8 @@
       box-sizing: border-box;
       z-index: 2;
       font-family: 'Senobi-Gothic', sans-serif;
+      visibility: visible;
+      opacity: 1;
     }
     
     .comment-area::-webkit-scrollbar {
@@ -398,10 +402,21 @@
       const mainContainer = document.querySelector('.main-container');
       
       if (stoneImage && commentArea && stoneContainer && mainContainer) {
-        stoneImage.onload = function() {
+        const adjustSize = () => {
+          // コンテナの幅を取得（0の場合はデフォルト値を使用）
+          let containerWidth = mainContainer.offsetWidth;
+          if (containerWidth === 0) {
+            containerWidth = Math.min(window.innerWidth, 924);
+          }
+          
+          if (stoneImage.naturalWidth === 0 || stoneImage.naturalHeight === 0) {
+            // 画像がまだ読み込まれていない場合は再試行
+            setTimeout(adjustSize, 100);
+            return;
+          }
+          
           const naturalWidth = stoneImage.naturalWidth;
           const naturalHeight = stoneImage.naturalHeight;
-          const containerWidth = mainContainer.offsetWidth;
           const maxWidth = Math.min(naturalWidth, containerWidth, 924);
           
           // スケール比を計算
@@ -410,6 +425,11 @@
           // 石画像のサイズを設定
           stoneImage.style.width = `${maxWidth}px`;
           stoneImage.style.height = 'auto';
+          stoneImage.style.maxWidth = `${maxWidth}px`;
+          
+          // 石コンテナの幅も設定
+          stoneContainer.style.width = '100%';
+          stoneContainer.style.maxWidth = `${maxWidth}px`;
           
           // コメント欄の位置とサイズを設定
           commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
@@ -433,9 +453,14 @@
           calculateBackgroundHeight();
         };
         
+        stoneImage.onload = adjustSize;
+        
         // 既に読み込まれている場合
-        if (stoneImage.complete) {
-          stoneImage.onload();
+        if (stoneImage.complete && stoneImage.naturalWidth > 0) {
+          adjustSize();
+        } else {
+          // 画像が読み込まれるまで待つ
+          setTimeout(adjustSize, 100);
         }
       }
     }
