@@ -6,6 +6,27 @@
   <title>石の掲示板</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <style>
+    @font-face {
+      font-family: 'Senobi-Gothic';
+      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    
+    @font-face {
+      font-family: 'Senobi-Gothic';
+      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+    
+    @font-face {
+      font-family: 'Senobi-Gothic';
+      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+    
     * {
       margin: 0;
       padding: 0;
@@ -34,6 +55,9 @@
       background-repeat: no-repeat;
       overflow-y: auto;
       overflow-x: hidden;
+      -webkit-overflow-scrolling: touch; /* iOSでのスムーズなスクロール */
+      overscroll-behavior: contain; /* スクロールの伝播を防ぐ */
+      touch-action: pan-y; /* 縦方向のスクロールを許可 */
     }
     
     .main-container * {
@@ -43,7 +67,7 @@
     
     #canvas-container {
       width: 100%;
-      height: 100%;
+      height: auto;
       position: relative;
       min-height: 200vh; /* 最低でも2画面分の高さを確保 */
       display: flex;
@@ -537,6 +561,7 @@
         
         // ニックネームとコメントを表示
         const nicknameDiv = document.createElement('div');
+        nicknameDiv.style.fontFamily = 'Senobi-Gothic, sans-serif';
         nicknameDiv.style.fontWeight = 'bold';
         nicknameDiv.style.fontSize = `${Math.max(12, stoneWidth * 0.04)}px`;
         nicknameDiv.style.color = '#333';
@@ -546,6 +571,7 @@
         nicknameDiv.textContent = post.nickname || '匿名';
         
         const commentDiv = document.createElement('div');
+        commentDiv.style.fontFamily = 'Senobi-Gothic, sans-serif';
         commentDiv.style.fontSize = `${Math.max(10, stoneWidth * 0.035)}px`;
         commentDiv.style.color = '#555';
         commentDiv.style.lineHeight = '1.4';
