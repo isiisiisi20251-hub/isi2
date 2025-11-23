@@ -208,6 +208,7 @@
     let backgroundWidth = 0; // バックグラウンド画像の幅
     let backgroundHeight = 0; // バックグラウンド画像の高さ
     let totalPostsCount = 0; // 投稿の総数（上方向パディング計算用）
+    let topOffset = 0; // 石の初期位置のオフセット（上方向の余白）
     
     // 各石のテキストボックス情報
     const stoneTextAreas = {
@@ -382,10 +383,8 @@
       adjustContainerHeight();
     }
     
-    // 上方向のパディングを設定
-    function setTopPadding() {
-      const container = document.getElementById('canvas-container');
-      
+    // 上方向のオフセットを計算して設定（石の初期位置を調整するため）
+    function setTopOffset() {
       // 現在作成されている石の数を取得
       const stonesCount = stones.length;
       
@@ -402,12 +401,9 @@
       });
       
       // 石の高さの合計 × 2倍 + caption.pngの高さ
-      const topPadding = totalStoneHeight * 2 + captionHeight;
+      topOffset = totalStoneHeight * 2 + captionHeight;
       
-      // 上方向のパディングを設定
-      container.style.paddingTop = `${topPadding}px`;
-      
-      console.log(`上方向パディングを設定: ${topPadding}px (石の高さ合計: ${totalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
+      console.log(`上方向オフセットを設定: ${topOffset}px (石の高さ合計: ${totalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
     }
     
     // 投稿データを取得して石を生成
@@ -438,6 +434,27 @@
           const dateB = new Date(b.createdAt);
           return dateA - dateB;
         });
+        
+        // 事前にtopOffsetを計算（平均的な石のサイズを使用）
+        // バックグラウンド画像の実際の表示幅（containerWidth）の60%を最大サイズとして設定
+        const maxDisplayWidth = containerWidth * 0.6;
+        // 平均的な石のサイズ（すべての石画像の平均）
+        const averageOriginalWidth = 970;
+        const averageOriginalHeight = 567;
+        // スケールを計算
+        let scale;
+        if (averageOriginalWidth > maxDisplayWidth) {
+          scale = maxDisplayWidth / averageOriginalWidth;
+        } else {
+          scale = 1.0;
+        }
+        // 平均的な石の高さ
+        const averageStoneHeight = averageOriginalHeight * scale;
+        // すべての石の高さの合計
+        const estimatedTotalStoneHeight = averageStoneHeight * totalPostsCount;
+        // 事前にtopOffsetを設定（石の高さ合計×2倍+caption高さ）
+        topOffset = estimatedTotalStoneHeight * 2 + captionHeight;
+        console.log(`事前にtopOffsetを設定: ${topOffset}px (推定石の高さ合計: ${estimatedTotalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
         
         // 各投稿に対して石を生成（少し遅延させて順番に落下させる）
         postsWithComments.forEach((post, index) => {
@@ -513,7 +530,8 @@
         // 石が回転する可能性を考慮して、少し余裕を持たせる
         const margin = stoneWidth * 0.6; // 回転を考慮してマージンを大きく
         const startX = margin + Math.random() * (containerWidth - margin * 2);
-        const startY = -stoneHeight - index * 50; // 上から順番に配置
+        // 上方向のオフセットを考慮して、石の初期位置を調整
+        const startY = topOffset - stoneHeight - index * 50; // 上から順番に配置
         
         // Matter.js のボディを作成
         const stoneBody = Matter.Bodies.rectangle(
@@ -644,9 +662,11 @@
         
         // すべての石が作成されたかをチェック
         if (stones.length === totalPostsCount && totalPostsCount > 0) {
-          // すべての石が作成されたので、上方向パディングを設定
+          // すべての石が作成されたので、実際の石の高さを使ってtopOffsetを再計算
           setTimeout(() => {
-            setTopPadding();
+            setTopOffset();
+            // topOffsetが変更された場合、既存の石の位置を調整する必要があるが、
+            // 物理演算が既に開始されているため、位置の微調整はadjustContainerHeightで行われる
           }, 100); // 少し待ってから設定（すべての石が確実に作成されるように）
         }
       };
@@ -775,8 +795,9 @@
         }
       });
       
-      // 上方向の余白を確保（石が上から落下するため）
-      const topPadding = Math.max(containerHeight, Math.abs(minY) + containerHeight * 0.5);
+      // 上方向の余白を確保（石の高さ合計×2倍+caption高さ、または石の最小位置のどちらか大きい方）
+      const calculatedTopPadding = Math.max(containerHeight, Math.abs(minY) + containerHeight * 0.5);
+      const topPadding = Math.max(calculatedTopPadding, topOffset);
       // 下方向の余白を確保
       const bottomPadding = containerHeight * 0.5;
       // 最低でも2画面分の高さを確保し、石が画面外に出ないように余裕を持たせる
