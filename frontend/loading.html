@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>読み込み中...</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .loading-gif {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <img src="src/gif/opening.gif" alt="読み込み中" class="loading-gif">
+  
+  <script>
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000' 
+      : 'https://isi2-backend.onrender.com';
+    
+    // URLパラメータから石IDを取得
+    function getStoneIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stoneId = urlParams.get('stoneId');
+      
+      if (!stoneId) {
+        const host = window.location.hostname;
+        const match = host.match(/^isi(\d+)/);
+        if (match) {
+          const num = match[1].padStart(3, '0');
+          return `stone-${num}`;
+        }
+      }
+      
+      return stoneId;
+    }
+    
+    const stoneId = getStoneIdFromUrl();
+    
+    // 投稿データを事前に取得して計算
+    async function preloadAndCalculate() {
+      if (!stoneId) {
+        console.error('石IDが取得できませんでした');
+        // エラー時もthread.htmlに遷移
+        window.location.href = 'thread.html';
+        return;
+      }
+      
+      try {
+        // 投稿データを取得
+        const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
+        if (!response.ok) {
+          console.error('投稿データの取得に失敗しました');
+          window.location.href = 'thread.html';
+          return;
+        }
+        
+        const posts = await response.json();
+        
+        // コメントがある投稿のみをフィルタリング
+        const postsWithComments = posts.filter(post => post.comment && post.comment.trim().length > 0);
+        
+        // 計算結果をsessionStorageに保存
+        sessionStorage.setItem('preloadedPosts', JSON.stringify(postsWithComments));
+        sessionStorage.setItem('stoneId', stoneId);
+        
+        console.log(`事前計算完了: ${postsWithComments.length}件の投稿を読み込み`);
+        
+        // thread.htmlに遷移
+        const redirectUrl = stoneId ? `thread.html?stoneId=${stoneId}` : 'thread.html';
+        window.location.href = redirectUrl;
+      } catch (error) {
+        console.error('投稿データの取得エラー:', error);
+        // エラー時もthread.htmlに遷移
+        window.location.href = 'thread.html';
+      }
+    }
+    
+    // ページ読み込み時に実行
+    window.addEventListener('load', () => {
+      // 少し待ってから計算を開始（GIFが表示される時間を確保）
+      setTimeout(() => {
+        preloadAndCalculate();
+      }, 500);
+    });
+  </script>
+</body>
+</html>
+

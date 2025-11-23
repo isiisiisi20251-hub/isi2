@@ -438,22 +438,44 @@
         return;
       }
       
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
-        if (!response.ok) {
-          console.error('投稿データの取得に失敗しました');
+      let postsWithComments = [];
+      
+      // sessionStorageから事前計算されたデータを取得
+      const preloadedPosts = sessionStorage.getItem('preloadedPosts');
+      if (preloadedPosts) {
+        try {
+          postsWithComments = JSON.parse(preloadedPosts);
+          console.log('事前計算されたデータを使用:', postsWithComments.length, '件');
+          // 使用後は削除
+          sessionStorage.removeItem('preloadedPosts');
+        } catch (error) {
+          console.error('事前計算データの読み込みエラー:', error);
+        }
+      }
+      
+      // 事前計算データがない場合はAPIから取得
+      if (postsWithComments.length === 0) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
+          if (!response.ok) {
+            console.error('投稿データの取得に失敗しました');
+            return;
+          }
+          
+          const posts = await response.json();
+          
+          // コメントがある投稿のみをフィルタリング（ニックネームだけの投稿は除外）
+          postsWithComments = posts.filter(post => post.comment && post.comment.trim().length > 0);
+        } catch (error) {
+          console.error('投稿データの取得エラー:', error);
           return;
         }
-        
-        const posts = await response.json();
-        
-        // コメントがある投稿のみをフィルタリング（ニックネームだけの投稿は除外）
-        const postsWithComments = posts.filter(post => post.comment && post.comment.trim().length > 0);
+      }
         
         // 投稿の総数を保存
         totalPostsCount = postsWithComments.length;
         
-        // 時系列順（古い順）にソート
+        // 時系列順（古い順）にソート（事前計算データは既にソート済みの可能性があるが、念のため）
         postsWithComments.sort((a, b) => {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
@@ -494,9 +516,9 @@
             setTopOffset();
             adjustContainerHeight();
             
-            // ローディング画面を非表示にする
+            // ローディング画面を非表示にする（事前計算データがある場合は既に表示されていない）
             const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
               loadingScreen.classList.add('hidden');
               // アニメーション後に完全に削除
               setTimeout(() => {
