@@ -450,23 +450,22 @@
       }
     }
     
-    // 石画像とコメント欄の位置を調整（個別の石コンテナに対して）
-    function adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea) {
+    // 石画像のサイズを調整（個別の石コンテナに対して）
+    function adjustStoneSize(stoneContainer, stoneImage) {
       const mainContainer = document.querySelector('.main-container');
       
-      if (!stoneImage || !commentArea || !stoneContainer || !mainContainer) {
+      if (!stoneImage || !stoneContainer || !mainContainer) {
         return;
       }
       
       // 画像のサイズを確認（確実に読み込まれるまで待つ）
       if (stoneImage.naturalWidth === 0 || stoneImage.naturalHeight === 0) {
         // 画像がまだ読み込まれていない場合は再試行
-        setTimeout(() => adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea), 100);
+        setTimeout(() => adjustStoneSize(stoneContainer, stoneImage), 100);
         return;
       }
       
       // コンテナの幅を取得（確実に取得できるようにする）
-      // まず、mainContainerの実際の幅を取得
       let containerWidth = mainContainer.offsetWidth || mainContainer.clientWidth;
       
       // まだ取得できない場合は、window幅を使用
@@ -478,23 +477,12 @@
       const naturalHeight = stoneImage.naturalHeight;
       
       // 実際に使用する幅を計算（コンテナ幅、画像幅、最大幅の最小値）
-      // 画像の元の幅を優先的に使用
       const maxWidth = Math.min(naturalWidth, containerWidth, 924);
       
       // スケール比を計算
       const scale = maxWidth / naturalWidth;
       
-      // デバッグ用ログ
-      console.log('画像サイズ調整:', {
-        naturalWidth,
-        naturalHeight,
-        containerWidth,
-        maxWidth,
-        scale
-      });
-      
       // 石画像のサイズを設定（画像の元のアスペクト比を維持）
-      // widthを設定すると、height: autoで自動的にアスペクト比が維持される
       stoneImage.style.width = `${maxWidth}px`;
       stoneImage.style.height = 'auto';
       stoneImage.style.maxWidth = `${maxWidth}px`;
@@ -512,23 +500,6 @@
       stoneContainer.style.margin = '0 auto';
       stoneContainer.style.display = 'block';
       stoneContainer.style.position = 'relative';
-      
-      // コメント欄の位置とサイズを設定
-      commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
-      commentArea.style.top = `${COMMENT_AREA.y * scale}px`;
-      commentArea.style.width = `${COMMENT_AREA.width * scale}px`;
-      commentArea.style.height = `${COMMENT_AREA.height * scale}px`;
-      commentArea.style.display = 'block';
-      commentArea.style.visibility = 'visible';
-      commentArea.style.opacity = '1';
-      
-      // フォントサイズもスケール（大きくする）
-      const baseFontSize = 24;
-      commentArea.style.fontSize = `${baseFontSize * scale}px`;
-      
-      // パディングもスケール
-      const basePadding = 15;
-      commentArea.style.padding = `${basePadding * scale}px`;
       
       // 石コンテナの高さを設定
       const stoneHeight = naturalHeight * scale;
@@ -614,41 +585,18 @@
           stoneImage.alt = '石';
           stoneImage.className = 'stone-image';
           
-          // コメント欄を作成
-          const commentArea = document.createElement('div');
-          commentArea.className = 'comment-area';
-          
-          // 投稿内容を追加
-          const postElement = document.createElement('div');
-          postElement.className = 'post-item';
-          
-          let html = '';
-          if (post.nickname) {
-            html += `<div class="nickname" style="color: ${post.pinColor || '#333'};">${escapeHtml(post.nickname)}</div>`;
-          }
-          if (post.comment) {
-            html += `<div class="comment">${escapeHtml(post.comment)}</div>`;
-          }
-          if (post.createdAt) {
-            html += `<div class="timestamp">${new Date(post.createdAt).toLocaleString('ja-JP')}</div>`;
-          }
-          
-          postElement.innerHTML = html;
-          commentArea.appendChild(postElement);
-          
-          // 要素を組み立て
+          // 要素を組み立て（コメント欄は表示しない）
           stoneContainer.appendChild(stoneImage);
-          stoneContainer.appendChild(commentArea);
           stonesContainer.appendChild(stoneContainer);
           
-          // 石画像とコメント欄の位置を調整（画像読み込み後に実行）
+          // 石画像のサイズを調整（画像読み込み後に実行）
           stoneImage.onload = () => {
-            adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea);
+            adjustStoneSize(stoneContainer, stoneImage);
           };
           
           // 既に読み込まれている場合
           if (stoneImage.complete) {
-            adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea);
+            adjustStoneSize(stoneContainer, stoneImage);
           }
         });
         
@@ -726,9 +674,8 @@
         const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
         stoneContainers.forEach(container => {
           const stoneImage = container.querySelector('.stone-image');
-          const commentArea = container.querySelector('.comment-area');
-          if (stoneImage && commentArea) {
-            adjustStoneAndCommentArea(container, stoneImage, commentArea);
+          if (stoneImage) {
+            adjustStoneSize(container, stoneImage);
           }
         });
       }
@@ -745,9 +692,8 @@
           const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
           stoneContainers.forEach(container => {
             const stoneImage = container.querySelector('.stone-image');
-            const commentArea = container.querySelector('.comment-area');
-            if (stoneImage && commentArea) {
-              adjustStoneAndCommentArea(container, stoneImage, commentArea);
+            if (stoneImage) {
+              adjustStoneSize(container, stoneImage);
             }
           });
         }
