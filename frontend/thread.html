@@ -505,10 +505,14 @@
       const stoneHeight = naturalHeight * scale;
       stoneContainer.style.minHeight = `${stoneHeight}px`;
       
-      // 背景の高さを再計算
-      setTimeout(() => {
-        calculateBackgroundHeight();
-      }, 50);
+      // 背景の高さを再計算（一度だけ実行するように）
+      // 複数回呼ばれないようにフラグで制御
+      if (!stoneContainer.dataset.adjusted) {
+        stoneContainer.dataset.adjusted = 'true';
+        setTimeout(() => {
+          calculateBackgroundHeight();
+        }, 50);
+      }
     }
     
     // 背景画像のサイズに合わせてcaptionとpost2のサイズを調整
@@ -656,30 +660,36 @@
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
       const body = document.body;
-      const mainContainer = document.querySelector('.main-container');
-      if (body && mainContainer) {
+      if (body) {
         body.style.height = `${window.innerHeight}px`;
-        mainContainer.style.height = `${window.innerHeight}px`;
       }
+      // mainContainerの高さは固定しない（コンテンツに応じて伸びるように）
     }
     
     // 初期設定とリサイズ時の処理
     setViewportHeight();
+    
+    // リサイズ時の処理をデバウンス
+    let resizeTimer;
     window.addEventListener('resize', () => {
       setViewportHeight();
-      adjustImageSizes();
-      // すべての石コンテナを再調整
-      const stonesContainer = document.getElementById('stonesContainer');
-      if (stonesContainer) {
-        const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-        stoneContainers.forEach(container => {
-          const stoneImage = container.querySelector('.stone-image');
-          if (stoneImage) {
-            adjustStoneSize(container, stoneImage);
-          }
-        });
-      }
-      calculateBackgroundHeight();
+      // デバウンス処理（300ms後に実行）
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        adjustImageSizes();
+        // すべての石コンテナを再調整
+        const stonesContainer = document.getElementById('stonesContainer');
+        if (stonesContainer) {
+          const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
+          stoneContainers.forEach(container => {
+            const stoneImage = container.querySelector('.stone-image');
+            if (stoneImage) {
+              adjustStoneSize(container, stoneImage);
+            }
+          });
+        }
+        calculateBackgroundHeight();
+      }, 300);
     });
     window.addEventListener('orientationchange', () => {
       setViewportHeight();
