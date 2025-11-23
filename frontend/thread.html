@@ -339,12 +339,18 @@
       }
       
       const containerWidth = mainContainer.offsetWidth || Math.min(window.innerWidth, 924);
-      const maxWidth = Math.min(924, containerWidth);
       
-      // 各画像のスケール比を計算
+      // バックグラウンドの元の幅と高さ
       const bgWidth = bgImageLoader.naturalWidth;
       const bgHeight = bgImageLoader.naturalHeight;
-      const bgScale = maxWidth / bgWidth;
+      
+      // バックグラウンドのスケール後の幅を計算（これが基準になる）
+      // バックグラウンドの幅を損なわないように、元の幅を優先
+      const bgScaledWidth = Math.min(bgWidth, containerWidth, 924);
+      const bgScale = bgScaledWidth / bgWidth;
+      
+      // すべての画像はバックグラウンドのスケール後の幅に合わせる
+      const maxWidth = bgScaledWidth;
       
       const stoneWidth = stoneImageLoader.naturalWidth;
       const stoneHeight = stoneImageLoader.naturalHeight;
@@ -465,19 +471,33 @@
         return;
       }
       
-      // コンテナの幅を取得（確実に取得できるようにする）
-      let containerWidth = mainContainer.offsetWidth || mainContainer.clientWidth;
+      // バックグラウンドの幅を基準にする
+      const bgImageLoader = document.getElementById('bgImageLoader');
+      if (!bgImageLoader || !bgImageLoader.complete) {
+        setTimeout(() => adjustStoneSize(stoneContainer, stoneImage), 100);
+        return;
+      }
       
-      // まだ取得できない場合は、window幅を使用
+      // コンテナの幅を取得
+      let containerWidth = mainContainer.offsetWidth || mainContainer.clientWidth;
       if (!containerWidth || containerWidth === 0) {
         containerWidth = Math.min(window.innerWidth || 924, 924);
       }
       
+      // バックグラウンドの元の幅と高さ
+      const bgNaturalWidth = bgImageLoader.naturalWidth;
+      const bgNaturalHeight = bgImageLoader.naturalHeight;
+      
+      // バックグラウンドのスケール後の幅を計算（これが基準になる）
+      const bgScaledWidth = Math.min(bgNaturalWidth, containerWidth, 924);
+      const bgScale = bgScaledWidth / bgNaturalWidth;
+      
       const naturalWidth = stoneImage.naturalWidth;
       const naturalHeight = stoneImage.naturalHeight;
       
-      // 実際に使用する幅を計算（コンテナ幅、画像幅、最大幅の最小値）
-      const maxWidth = Math.min(naturalWidth, containerWidth, 924);
+      // バックグラウンドのスケール後の幅に合わせて石のサイズを決定
+      // 石の元の幅とバックグラウンドのスケール後の幅の小さい方を使用
+      const maxWidth = Math.min(naturalWidth, bgScaledWidth);
       
       // スケール比を計算
       const scale = maxWidth / naturalWidth;
