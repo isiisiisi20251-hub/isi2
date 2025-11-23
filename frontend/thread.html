@@ -150,10 +150,10 @@
     .content-wrapper {
       position: relative;
       z-index: 1;
-      min-height: 100%;
       display: flex;
       flex-direction: column;
-      padding-bottom: 120px; /* ボタンとcaptionのスペース */
+      justify-content: flex-end;
+      min-height: 100vh;
     }
     
     .posts-container {
@@ -168,7 +168,7 @@
       width: 100%;
       max-width: 924px;
       margin: 0 auto;
-      padding: 20px 20px 0 20px;
+      padding: 0;
       position: relative;
       z-index: 2;
       display: flex;
@@ -177,6 +177,7 @@
       background-repeat: repeat-y;
       background-position: top center;
       background-size: 100% auto;
+      flex-shrink: 0;
     }
     
     .caption-container img {
@@ -187,18 +188,16 @@
     }
     
     .fixed-post-button {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
+      position: relative;
       z-index: 1000;
       max-width: 924px;
       width: 100%;
+      margin: 0 auto;
       display: flex;
       justify-content: center;
       padding: 0;
       background-color: transparent;
-      pointer-events: none;
+      flex-shrink: 0;
     }
     
     .fixed-post-button button {
@@ -266,12 +265,12 @@
       <div class="caption-container">
         <img src="src/thread_page/caption.png" alt="キャプション" id="captionImage">
       </div>
-    </div>
-    
-    <div class="fixed-post-button">
-      <button onclick="goToPost()">
-        <img src="src/thread_page/post2.png" alt="投稿" id="postButtonImage">
-      </button>
+      
+      <div class="fixed-post-button">
+        <button onclick="goToPost()">
+          <img src="src/thread_page/post2.png" alt="投稿" id="postButtonImage">
+        </button>
+      </div>
     </div>
   </div>
 
@@ -309,8 +308,8 @@
       height: 279
     };
     
-    // 背景画像の必要な高さを計算して設定
-    function calculateBackgroundHeight() {
+    // ステップ1: 必要なbackgound.pngの数を計算
+    function calculateRequiredBackgroundCount() {
       const bgImageLoader = document.getElementById('bgImageLoader');
       const captionImageLoader = document.getElementById('captionImageLoader');
       const stoneImageLoader = document.getElementById('stoneImageLoader');
@@ -320,75 +319,119 @@
       
       if (!bgImageLoader || !captionImageLoader || !stoneImageLoader || 
           !captionImage || !stonesContainer || !mainContainer) {
-        return;
+        return null;
       }
       
       // すべての画像が読み込まれるまで待つ
-      const checkAllLoaded = () => {
-        if (bgImageLoader.complete && captionImageLoader.complete && 
-            stoneImageLoader.complete && captionImage.complete) {
-          const containerWidth = mainContainer.offsetWidth;
-          const maxWidth = Math.min(924, containerWidth);
-          
-          // 各画像のスケール比を計算
-          const bgWidth = bgImageLoader.naturalWidth;
-          const bgHeight = bgImageLoader.naturalHeight;
-          const bgScale = maxWidth / bgWidth;
-          
-          const stoneWidth = stoneImageLoader.naturalWidth;
-          const stoneHeight = stoneImageLoader.naturalHeight;
-          const stoneScale = maxWidth / stoneWidth;
-          
-          const captionWidth = captionImageLoader.naturalWidth;
-          const captionHeight = captionImageLoader.naturalHeight;
-          const captionScale = maxWidth / captionWidth;
-          
-          // スケール後の高さを計算
-          const scaledStoneHeight = stoneHeight * stoneScale;
-          const scaledCaptionHeight = captionHeight * captionScale;
-          const scaledBgHeight = bgHeight * bgScale;
-          
-          // すべての石コンテナの高さを合計
-          const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-          let totalStoneHeight = 0;
-          stoneContainers.forEach(container => {
-            const stoneImg = container.querySelector('.stone-image');
-            if (stoneImg && stoneImg.complete) {
-              totalStoneHeight += scaledStoneHeight;
-            }
-          });
-          
-          // 必要な高さ = すべての石の高さ + キャプションの高さ
-          const totalHeight = totalStoneHeight + scaledCaptionHeight;
-          
-          // 各石コンテナに背景を設定
-          stoneContainers.forEach(stoneContainer => {
-            const stoneImg = stoneContainer.querySelector('.stone-image');
-            if (stoneImg && stoneImg.complete) {
-              // 各石コンテナに必要な背景画像の個数を計算
-              const bgCount = Math.ceil(scaledStoneHeight / scaledBgHeight);
-              stoneContainer.style.minHeight = `${bgCount * scaledBgHeight}px`;
-            }
-          });
-          
-          // キャプションコンテナの高さも設定
-          const captionContainer = document.querySelector('.caption-container');
-          if (captionContainer) {
-            // キャプション部分にも背景が必要な高さを計算
-            const captionBgCount = Math.ceil(scaledCaptionHeight / scaledBgHeight);
-            captionContainer.style.minHeight = `${captionBgCount * scaledBgHeight}px`;
-          }
-        }
+      if (!bgImageLoader.complete || !captionImageLoader.complete || 
+          !stoneImageLoader.complete || !captionImage.complete) {
+        return null;
+      }
+      
+      const containerWidth = mainContainer.offsetWidth || Math.min(window.innerWidth, 924);
+      const maxWidth = Math.min(924, containerWidth);
+      
+      // 各画像のスケール比を計算
+      const bgWidth = bgImageLoader.naturalWidth;
+      const bgHeight = bgImageLoader.naturalHeight;
+      const bgScale = maxWidth / bgWidth;
+      
+      const stoneWidth = stoneImageLoader.naturalWidth;
+      const stoneHeight = stoneImageLoader.naturalHeight;
+      const stoneScale = maxWidth / stoneWidth;
+      
+      const captionWidth = captionImageLoader.naturalWidth;
+      const captionHeight = captionImageLoader.naturalHeight;
+      const captionScale = maxWidth / captionWidth;
+      
+      // スケール後の高さを計算
+      const scaledStoneHeight = stoneHeight * stoneScale;
+      const scaledCaptionHeight = captionHeight * captionScale;
+      const scaledBgHeight = bgHeight * bgScale;
+      
+      // 投稿数を取得
+      const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
+      const postCount = stoneContainers.length;
+      
+      // 必要な高さ = 投稿の石の縦のピクセル数 × 投稿数 + caption.pngの縦のピクセル数
+      const totalHeight = (scaledStoneHeight * postCount) + scaledCaptionHeight;
+      
+      // 必要な背景画像の個数を計算（切り上げ）
+      const bgCount = Math.ceil(totalHeight / scaledBgHeight);
+      
+      console.log('背景計算:', {
+        postCount,
+        scaledStoneHeight,
+        scaledCaptionHeight,
+        totalHeight,
+        scaledBgHeight,
+        bgCount
+      });
+      
+      return {
+        bgCount,
+        scaledBgHeight,
+        scaledStoneHeight,
+        scaledCaptionHeight,
+        maxWidth,
+        bgScale,
+        stoneScale,
+        captionScale
       };
+    }
+    
+    // ステップ2: caption.pngとpost2.pngを画面最下部に下合わせで表示
+    function positionBottomElements(calcData) {
+      if (!calcData) return;
       
-      // 画像読み込みイベントを設定
-      bgImageLoader.onload = checkAllLoaded;
-      captionImageLoader.onload = checkAllLoaded;
-      stoneImageLoader.onload = checkAllLoaded;
-      captionImage.onload = checkAllLoaded;
+      const captionContainer = document.querySelector('.caption-container');
+      const postButton = document.querySelector('.fixed-post-button');
+      const captionImage = document.getElementById('captionImage');
+      const postButtonImage = document.getElementById('postButtonImage');
       
-      // 既に読み込まれている場合
-      checkAllLoaded();
+      if (captionContainer && captionImage) {
+        // captionの幅を設定
+        captionImage.style.width = `${calcData.maxWidth}px`;
+        captionImage.style.maxWidth = `${calcData.maxWidth}px`;
+        
+        // captionコンテナの高さを設定（背景が必要な高さ）
+        const captionBgCount = Math.ceil(calcData.scaledCaptionHeight / calcData.scaledBgHeight);
+        captionContainer.style.minHeight = `${captionBgCount * calcData.scaledBgHeight}px`;
+      }
+      
+      if (postButton && postButtonImage) {
+        // post2の幅を設定
+        postButtonImage.style.width = `${calcData.maxWidth}px`;
+        postButtonImage.style.maxWidth = `${calcData.maxWidth}px`;
+      }
+    }
+    
+    // ステップ3: コメント欄を積み上げていく
+    function setupStones(calcData) {
+      if (!calcData) return;
+      
+      const stonesContainer = document.getElementById('stonesContainer');
+      if (!stonesContainer) return;
+      
+      const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
+      
+      stoneContainers.forEach(stoneContainer => {
+        const stoneImg = stoneContainer.querySelector('.stone-image');
+        if (stoneImg && stoneImg.complete) {
+          // 各石コンテナに必要な背景画像の個数を計算
+          const bgCount = Math.ceil(calcData.scaledStoneHeight / calcData.scaledBgHeight);
+          stoneContainer.style.minHeight = `${bgCount * calcData.scaledBgHeight}px`;
+        }
+      });
+    }
+    
+    // 背景画像の必要な高さを計算して設定（統合関数）
+    function calculateBackgroundHeight() {
+      const calcData = calculateRequiredBackgroundCount();
+      if (calcData) {
+        positionBottomElements(calcData);
+        setupStones(calcData);
+      }
     }
     
     // 石画像とコメント欄の位置を調整（個別の石コンテナに対して）
