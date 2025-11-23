@@ -29,8 +29,8 @@
       position: relative;
       margin: 0 auto;
       background-image: url('src/thread_page/backgound.png');
-      background-size: cover;
-      background-position: center;
+      background-size: 100% auto; /* 横幅を100%に固定 */
+      background-position: center top;
       background-repeat: no-repeat;
       overflow-y: auto;
       overflow-x: hidden;
@@ -98,7 +98,8 @@
     }
     
     .post-button img {
-      width: auto;
+      width: 100%;
+      max-width: 924px;
       height: auto;
       display: block;
     }
