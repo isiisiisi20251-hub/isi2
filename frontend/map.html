@@ -370,7 +370,8 @@
 
     // 次へボタンのクリックイベント
     document.getElementById('nextButton').addEventListener('click', function() {
-      window.location.href = 'thread.html';
+      const redirectUrl = stoneId ? `loading.html?stoneId=${stoneId}` : 'loading.html';
+      window.location.href = redirectUrl;
     });
 
     // ページ読み込み時に地図を初期化
