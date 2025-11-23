@@ -183,11 +183,10 @@
 
   <script>
     // バックエンドAPIのURLを動的に取得
-    // 本番環境では、バックエンドのURLを設定してください
-    // 例: https://your-backend.onrender.com
+    // Renderのバックエンドサービス名に合わせて設定してください
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
-      : 'https://your-backend.onrender.com'; // ここに実際のバックエンドURLを設定
+      : 'https://isi-backend.onrender.com'; // RenderのバックエンドURL
     
     // 投稿データを取得
     async function loadPosts() {
