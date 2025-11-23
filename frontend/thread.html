@@ -266,6 +266,8 @@
     <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
     <img src="src/thread_page/caption.png" alt="" class="caption-image-loader" id="captionImageLoader">
     <img src="src/stones/stone1.png" alt="" class="stone-image-loader" id="stoneImageLoader">
+    <img src="src/thread_page/post2.png" alt="" class="background-image-loader" id="post2ImageLoader">
+    <img src="src/thread_page/post2.png" alt="" class="background-image-loader" id="post2ImageLoader">
     
     <div class="content-wrapper" id="contentWrapper">
       <div id="stonesContainer">
@@ -323,18 +325,19 @@
       const bgImageLoader = document.getElementById('bgImageLoader');
       const captionImageLoader = document.getElementById('captionImageLoader');
       const stoneImageLoader = document.getElementById('stoneImageLoader');
+      const post2ImageLoader = document.getElementById('post2ImageLoader');
       const captionImage = document.getElementById('captionImage');
       const stonesContainer = document.getElementById('stonesContainer');
       const mainContainer = document.querySelector('.main-container');
       
-      if (!bgImageLoader || !captionImageLoader || !stoneImageLoader || 
+      if (!bgImageLoader || !captionImageLoader || !stoneImageLoader || !post2ImageLoader ||
           !captionImage || !stonesContainer || !mainContainer) {
         return null;
       }
       
       // すべての画像が読み込まれるまで待つ
       if (!bgImageLoader.complete || !captionImageLoader.complete || 
-          !stoneImageLoader.complete || !captionImage.complete) {
+          !stoneImageLoader.complete || !post2ImageLoader.complete || !captionImage.complete) {
         return null;
       }
       
@@ -360,17 +363,22 @@
       const captionHeight = captionImageLoader.naturalHeight;
       const captionScale = maxWidth / captionWidth;
       
+      const post2Width = post2ImageLoader.naturalWidth;
+      const post2Height = post2ImageLoader.naturalHeight;
+      const post2Scale = maxWidth / post2Width;
+      
       // スケール後の高さを計算
       const scaledStoneHeight = stoneHeight * stoneScale;
       const scaledCaptionHeight = captionHeight * captionScale;
+      const scaledPost2Height = post2Height * post2Scale;
       const scaledBgHeight = bgHeight * bgScale;
       
       // 投稿数を取得
       const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
       const postCount = stoneContainers.length;
       
-      // 必要な高さ = 投稿の石の縦のピクセル数 × 投稿数 + caption.pngの縦のピクセル数
-      const totalHeight = (scaledStoneHeight * postCount) + scaledCaptionHeight;
+      // 必要な高さ = 投稿の石の縦のピクセル数 × 投稿数 + caption.pngの縦のピクセル数 + post2.pngの縦のピクセル数
+      const totalHeight = (scaledStoneHeight * postCount) + scaledCaptionHeight + scaledPost2Height;
       
       // 必要な背景画像の個数を計算（切り上げ）
       const bgCount = Math.ceil(totalHeight / scaledBgHeight);
@@ -389,10 +397,12 @@
         scaledBgHeight,
         scaledStoneHeight,
         scaledCaptionHeight,
+        scaledPost2Height,
         maxWidth,
         bgScale,
         stoneScale,
-        captionScale
+        captionScale,
+        post2Scale
       };
     }
     
@@ -411,7 +421,8 @@
         captionImage.style.width = `${calcData.maxWidth}px`;
         captionImage.style.maxWidth = `${calcData.maxWidth}px`;
         
-        // captionコンテナの高さを設定（背景が必要な高さ）
+        // captionコンテナの高さを設定（caption画像の実際の高さ以上にする）
+        // 背景が必要な高さを確保するため、背景画像の高さの倍数にする
         const captionBgCount = Math.ceil(calcData.scaledCaptionHeight / calcData.scaledBgHeight);
         captionContainer.style.minHeight = `${captionBgCount * calcData.scaledBgHeight}px`;
       }
@@ -422,8 +433,10 @@
         postButtonImage.style.maxWidth = `${calcData.maxWidth}px`;
       }
       
-      // コンテンツラッパーの高さを設定（必要な背景枚数分）
+      // コンテンツラッパーの高さを設定（すべての要素の高さの合計）
+      // 石の高さ + captionの高さ + post2の高さを確保
       if (contentWrapper && calcData.bgCount) {
+        // 背景枚数分の高さを設定（これで全要素が表示される）
         contentWrapper.style.minHeight = `${calcData.bgCount * calcData.scaledBgHeight}px`;
       }
     }
