@@ -48,9 +48,16 @@
       background-image: url('src/thread_page/backgound.png');
       background-repeat: repeat-y;
       background-position: top center;
-      background-size: contain;
+      background-size: 100% auto;
       z-index: 0;
       pointer-events: none;
+    }
+    
+    .background-image-loader {
+      position: absolute;
+      visibility: hidden;
+      width: 0;
+      height: 0;
     }
     
     .content-wrapper {
@@ -77,12 +84,15 @@
       padding: 20px;
       position: relative;
       z-index: 2;
+      display: flex;
+      justify-content: center;
     }
     
     .caption-container img {
       width: 100%;
       height: auto;
       display: block;
+      max-width: var(--bg-width, 100%);
     }
     
     .fixed-post-button {
@@ -109,9 +119,10 @@
     }
     
     .fixed-post-button img {
-      width: auto;
-      height: 60px;
-      max-width: 200px;
+      width: var(--bg-width, 100%);
+      max-width: var(--bg-width, 100%);
+      height: auto;
+      display: block;
     }
     
     .fixed-post-button button:active {
@@ -153,6 +164,7 @@
 <body>
   <div class="main-container">
     <div class="background"></div>
+    <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
     
     <div class="content-wrapper">
       <div class="posts-container" id="postsContainer">
@@ -160,13 +172,13 @@
       </div>
       
       <div class="caption-container">
-        <img src="src/thread_page/caption.png" alt="キャプション">
+        <img src="src/thread_page/caption.png" alt="キャプション" id="captionImage">
       </div>
     </div>
     
     <div class="fixed-post-button">
       <button onclick="goToPost()">
-        <img src="src/thread_page/post2.png" alt="投稿">
+        <img src="src/thread_page/post2.png" alt="投稿" id="postButtonImage">
       </button>
     </div>
   </div>
@@ -196,6 +208,36 @@
     }
     
     const stoneId = getStoneIdFromUrl();
+    
+    // 背景画像のサイズに合わせてcaptionとpost2のサイズを調整
+    function adjustImageSizes() {
+      const bgImage = document.getElementById('bgImageLoader');
+      const captionImage = document.getElementById('captionImage');
+      const postButtonImage = document.getElementById('postButtonImage');
+      const mainContainer = document.querySelector('.main-container');
+      
+      if (bgImage && captionImage && postButtonImage && mainContainer) {
+        bgImage.onload = function() {
+          const bgWidth = bgImage.naturalWidth;
+          const containerWidth = mainContainer.offsetWidth;
+          const maxWidth = Math.min(bgWidth, containerWidth, 924);
+          
+          // CSS変数として設定
+          document.documentElement.style.setProperty('--bg-width', `${maxWidth}px`);
+          
+          // captionとpost2の幅を設定
+          captionImage.style.width = `${maxWidth}px`;
+          captionImage.style.maxWidth = `${maxWidth}px`;
+          postButtonImage.style.width = `${maxWidth}px`;
+          postButtonImage.style.maxWidth = `${maxWidth}px`;
+        };
+        
+        // 既に読み込まれている場合
+        if (bgImage.complete) {
+          bgImage.onload();
+        }
+      }
+    }
     
     // 投稿データを取得して表示
     async function loadPosts() {
@@ -263,9 +305,13 @@
     // ページ読み込み時に投稿を読み込む
     loadPosts();
     
+    // 画像サイズの調整
+    adjustImageSizes();
+    
     // ページ読み込み後に最下部にスクロール（念のため）
     window.addEventListener('load', () => {
       setTimeout(scrollToBottom, 200);
+      adjustImageSizes();
     });
     
     // スマホでの全面表示のための高さ設定
@@ -282,10 +328,16 @@
     
     // 初期設定とリサイズ時の処理
     setViewportHeight();
-    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('resize', () => {
+      setViewportHeight();
+      adjustImageSizes();
+    });
     window.addEventListener('orientationchange', () => {
       setViewportHeight();
-      setTimeout(scrollToBottom, 300);
+      setTimeout(() => {
+        scrollToBottom();
+        adjustImageSizes();
+      }, 300);
     });
   </script>
 </body>
