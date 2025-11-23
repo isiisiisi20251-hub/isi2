@@ -115,11 +115,11 @@
     function createCustomMarkerIcon(color) {
       return {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 10,
+        scale: 12,
         fillColor: color,
         fillOpacity: 1,
         strokeColor: '#ffffff',
-        strokeWeight: 2
+        strokeWeight: 3
       };
     }
 
@@ -197,7 +197,8 @@
               },
               map: map,
               icon: createCustomMarkerIcon(color),
-              title: post.nickname || '投稿'
+              title: post.nickname || '投稿',
+              optimized: false
             });
           }, index * 300); // 300ms間隔で表示
         });
