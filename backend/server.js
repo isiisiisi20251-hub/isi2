@@ -157,15 +157,52 @@ app.post('/api/posts', async (req, res) => {
       return res.status(400).json({ error: '石IDが取得できませんでした' });
     }
     
-    const { nickname, comment, postLocation, pinColor } = req.body;
+    const { nickname, comment, postLocation } = req.body;
     
     // バリデーション
     if (!nickname) {
       return res.status(400).json({ error: 'ニックネームは必須です' });
     }
     
-    // ピンの色のバリデーション（#で始まる6桁の16進数）
-    const validPinColor = pinColor && /^#[0-9A-Fa-f]{6}$/.test(pinColor) ? pinColor : null;
+    // ピンの色の配列
+    const pinColors = ['#F17900', '#6466FF', '#00C27E', '#F2DD4E'];
+    
+    // 最新の投稿を取得（時系列順）
+    const latestPosts = await pool.query(
+      `SELECT nickname, pin_color 
+       FROM posts 
+       WHERE stone_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [stoneId]
+    );
+    
+    let assignedColor;
+    
+    if (latestPosts.rows.length > 0) {
+      const latestPost = latestPosts.rows[0];
+      
+      // 同じニックネームが連続している場合は同じ色を使用
+      if (latestPost.nickname === nickname && latestPost.pin_color) {
+        assignedColor = latestPost.pin_color;
+      } else {
+        // 連続していない場合は、最新の投稿の色の次の色を使用（ループ）
+        const currentColorIndex = latestPost.pin_color 
+          ? pinColors.indexOf(latestPost.pin_color)
+          : -1;
+        
+        if (currentColorIndex >= 0) {
+          // 次の色を取得（ループ）
+          assignedColor = pinColors[(currentColorIndex + 1) % pinColors.length];
+        } else {
+          // 色が設定されていない場合は最初の色
+          assignedColor = pinColors[0];
+        }
+      }
+    } else {
+      // 最初の投稿の場合は最初の色
+      assignedColor = pinColors[0];
+    }
     
     // 石が存在しない場合は作成
     await pool.query(
@@ -186,7 +223,7 @@ app.post('/api/posts', async (req, res) => {
         comment || '',
         postLocation?.lat || null,
         postLocation?.lng || null,
-        validPinColor
+        assignedColor
       ]
     );
     
