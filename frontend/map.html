@@ -29,32 +29,32 @@
       max-width: 924px;
       position: relative;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
     }
     
-    h1 {
-      font-size: 24px;
-      margin-bottom: 30px;
-      color: #333;
+    #map {
+      width: 100%;
+      height: 100%;
+      filter: grayscale(100%);
     }
     
-    .button {
-      padding: 15px 30px;
-      font-size: 18px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
+    .next-button {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: transform 0.2s;
+      max-width: 200px;
+      height: auto;
     }
     
-    .button:hover {
-      background-color: #45a049;
+    .next-button:hover {
+      transform: translateX(-50%) scale(1.05);
+    }
+    
+    .next-button:active {
+      transform: translateX(-50%) scale(0.95);
     }
     
     @media (max-width: 480px) {
@@ -62,14 +62,194 @@
         max-width: 100%;
         width: 100vw;
       }
+      
+      .next-button {
+        bottom: 10px;
+        max-width: 150px;
+      }
+    }
+    
+    @media (min-width: 481px) and (max-width: 924px) {
+      .main-container {
+        max-width: 924px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="main-container">
-    <h1>マップページ</h1>
-    <button class="button" onclick="window.location.href='thread.html'">スレッドへ</button>
+    <div id="map"></div>
+    <img src="/src/map_page/next_button1.png" alt="次へ" class="next-button" id="nextButton">
   </div>
+
+  <script>
+    let map;
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000' 
+      : 'https://isi2-backend.onrender.com';
+    
+    // ピンの色の配列
+    const pinColors = ['#F17900', '#6466FF', '#00C27E', '#F2DD4E'];
+    
+    // URLパラメータから石IDを取得
+    function getStoneIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stoneId = urlParams.get('stoneId');
+      
+      // URLパラメータがない場合は、ホスト名から取得を試みる
+      if (!stoneId) {
+        const host = window.location.hostname;
+        // isi2.onrender.com → stone-002
+        const match = host.match(/^isi(\d+)/);
+        if (match) {
+          const num = match[1].padStart(3, '0');
+          return `stone-${num}`;
+        }
+      }
+      
+      return stoneId;
+    }
+    
+    const stoneId = getStoneIdFromUrl();
+
+    // カスタムマーカーアイコンを作成
+    function createCustomMarkerIcon(color) {
+      return {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2
+      };
+    }
+
+    // 投稿データを取得してマーカーを表示
+    async function loadPostsAndDisplayMarkers() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/posts?stoneId=${stoneId}`);
+        if (!response.ok) {
+          console.error('投稿データの取得に失敗しました');
+          return;
+        }
+        
+        const posts = await response.json();
+        
+        // 時系列順（古い順）にソート
+        posts.sort((a, b) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateA - dateB;
+        });
+        
+        // 位置情報がある投稿のみフィルタリング
+        const postsWithLocation = posts.filter(post => 
+          post.postLocationLat && post.postLocationLng
+        );
+        
+        if (postsWithLocation.length === 0) {
+          console.log('位置情報のある投稿がありません');
+          return;
+        }
+        
+        // マップの中心を最初の投稿の位置に設定
+        const firstPost = postsWithLocation[0];
+        map.setCenter({
+          lat: firstPost.postLocationLat,
+          lng: firstPost.postLocationLng
+        });
+        
+        // すべての投稿位置を含む範囲を計算
+        const bounds = new google.maps.LatLngBounds();
+        postsWithLocation.forEach(post => {
+          bounds.extend({
+            lat: post.postLocationLat,
+            lng: post.postLocationLng
+          });
+        });
+        
+        // マップをすべてのマーカーが表示されるように調整
+        if (postsWithLocation.length > 1) {
+          map.fitBounds(bounds);
+        } else {
+          map.setZoom(15);
+        }
+        
+        // 時系列順にピンを表示（アニメーション）
+        postsWithLocation.forEach((post, index) => {
+          const color = pinColors[index % pinColors.length];
+          
+          setTimeout(() => {
+            const marker = new google.maps.Marker({
+              position: {
+                lat: post.postLocationLat,
+                lng: post.postLocationLng
+              },
+              map: map,
+              icon: createCustomMarkerIcon(color),
+              title: post.nickname || '投稿'
+            });
+          }, index * 300); // 300ms間隔で表示
+        });
+        
+      } catch (error) {
+        console.error('投稿データの取得エラー:', error);
+      }
+    }
+
+    // Google Maps APIキーを取得して地図を初期化
+    async function initMap() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/google-maps-config`);
+        const config = await response.json();
+        
+        if (!config.apiKey) {
+          console.error('Google Maps APIキーが設定されていません');
+          return;
+        }
+
+        // Google Maps JavaScript APIを動的に読み込む
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&callback=loadMap`;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+        
+        window.loadMap = function() {
+          // デフォルトの位置（東京芸術大学上野キャンパス付近）
+          const defaultLocation = { lat: 35.7175, lng: 139.7733 };
+          
+          const mapOptions = {
+            center: defaultLocation,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            zoomControl: true
+          };
+          
+          if (config.mapId) {
+            mapOptions.mapId = config.mapId;
+          }
+          
+          map = new google.maps.Map(document.getElementById('map'), mapOptions);
+          
+          // 投稿データを読み込んでマーカーを表示
+          loadPostsAndDisplayMarkers();
+        };
+      } catch (error) {
+        console.error('地図の初期化エラー:', error);
+      }
+    }
+
+    // 次へボタンのクリックイベント
+    document.getElementById('nextButton').addEventListener('click', function() {
+      window.location.href = 'thread.html';
+    });
+
+    // ページ読み込み時に地図を初期化
+    initMap();
+  </script>
 </body>
 </html>
 
