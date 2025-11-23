@@ -63,14 +63,10 @@
       width: 100%;
       max-width: 924px;
       margin: 0 auto;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
       background-image: url('src/thread_page/backgound.png');
       background-repeat: repeat-y;
       background-position: top center;
       background-size: 100% auto;
-      min-width: 0;
     }
     
     .caption-image-loader {
@@ -88,13 +84,11 @@
     }
     
     .stone-image {
-      width: 100%;
-      height: auto;
-      max-width: 924px;
+      /* 初期値は設定せず、JavaScriptで動的に設定 */
       display: block;
       position: relative;
       z-index: 1;
-      min-width: 0;
+      box-sizing: border-box;
     }
     
     .comment-area {
@@ -401,68 +395,90 @@
     function adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea) {
       const mainContainer = document.querySelector('.main-container');
       
-      if (stoneImage && commentArea && stoneContainer && mainContainer) {
-        const adjustSize = () => {
-          // コンテナの幅を取得（0の場合はデフォルト値を使用）
-          let containerWidth = mainContainer.offsetWidth;
-          if (containerWidth === 0) {
-            containerWidth = Math.min(window.innerWidth, 924);
-          }
-          
-          if (stoneImage.naturalWidth === 0 || stoneImage.naturalHeight === 0) {
-            // 画像がまだ読み込まれていない場合は再試行
-            setTimeout(adjustSize, 100);
-            return;
-          }
-          
-          const naturalWidth = stoneImage.naturalWidth;
-          const naturalHeight = stoneImage.naturalHeight;
-          const maxWidth = Math.min(naturalWidth, containerWidth, 924);
-          
-          // スケール比を計算
-          const scale = maxWidth / naturalWidth;
-          
-          // 石画像のサイズを設定
-          stoneImage.style.width = `${maxWidth}px`;
-          stoneImage.style.height = 'auto';
-          stoneImage.style.maxWidth = `${maxWidth}px`;
-          
-          // 石コンテナの幅も設定
-          stoneContainer.style.width = '100%';
-          stoneContainer.style.maxWidth = `${maxWidth}px`;
-          
-          // コメント欄の位置とサイズを設定
-          commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
-          commentArea.style.top = `${COMMENT_AREA.y * scale}px`;
-          commentArea.style.width = `${COMMENT_AREA.width * scale}px`;
-          commentArea.style.height = `${COMMENT_AREA.height * scale}px`;
-          
-          // フォントサイズもスケール（大きくする）
-          const baseFontSize = 24;
-          commentArea.style.fontSize = `${baseFontSize * scale}px`;
-          
-          // パディングもスケール
-          const basePadding = 15;
-          commentArea.style.padding = `${basePadding * scale}px`;
-          
-          // 石コンテナの高さを設定
-          const stoneHeight = naturalHeight * scale;
-          stoneContainer.style.minHeight = `${stoneHeight}px`;
-          
-          // 背景の高さを再計算
-          calculateBackgroundHeight();
-        };
-        
-        stoneImage.onload = adjustSize;
-        
-        // 既に読み込まれている場合
-        if (stoneImage.complete && stoneImage.naturalWidth > 0) {
-          adjustSize();
-        } else {
-          // 画像が読み込まれるまで待つ
-          setTimeout(adjustSize, 100);
-        }
+      if (!stoneImage || !commentArea || !stoneContainer || !mainContainer) {
+        return;
       }
+      
+      // 画像のサイズを確認（確実に読み込まれるまで待つ）
+      if (stoneImage.naturalWidth === 0 || stoneImage.naturalHeight === 0) {
+        // 画像がまだ読み込まれていない場合は再試行
+        setTimeout(() => adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea), 100);
+        return;
+      }
+      
+      // コンテナの幅を取得（確実に取得できるようにする）
+      // まず、mainContainerの実際の幅を取得
+      let containerWidth = mainContainer.offsetWidth || mainContainer.clientWidth;
+      
+      // まだ取得できない場合は、window幅を使用
+      if (!containerWidth || containerWidth === 0) {
+        containerWidth = Math.min(window.innerWidth || 924, 924);
+      }
+      
+      const naturalWidth = stoneImage.naturalWidth;
+      const naturalHeight = stoneImage.naturalHeight;
+      
+      // 実際に使用する幅を計算（コンテナ幅、画像幅、最大幅の最小値）
+      // 画像の元の幅を優先的に使用
+      const maxWidth = Math.min(naturalWidth, containerWidth, 924);
+      
+      // スケール比を計算
+      const scale = maxWidth / naturalWidth;
+      
+      // デバッグ用ログ
+      console.log('画像サイズ調整:', {
+        naturalWidth,
+        naturalHeight,
+        containerWidth,
+        maxWidth,
+        scale
+      });
+      
+      // 石画像のサイズを設定（画像の元のアスペクト比を維持）
+      // widthを設定すると、height: autoで自動的にアスペクト比が維持される
+      stoneImage.style.width = `${maxWidth}px`;
+      stoneImage.style.height = 'auto';
+      stoneImage.style.maxWidth = `${maxWidth}px`;
+      stoneImage.style.minWidth = `${maxWidth}px`;
+      stoneImage.style.display = 'block';
+      stoneImage.style.flexShrink = '0';
+      stoneImage.style.flexGrow = '0';
+      stoneImage.style.objectFit = 'contain';
+      stoneImage.style.boxSizing = 'border-box';
+      
+      // 石コンテナの幅も設定（画像の幅に合わせる）
+      stoneContainer.style.width = `${maxWidth}px`;
+      stoneContainer.style.maxWidth = `${maxWidth}px`;
+      stoneContainer.style.minWidth = `${maxWidth}px`;
+      stoneContainer.style.margin = '0 auto';
+      stoneContainer.style.display = 'block';
+      stoneContainer.style.position = 'relative';
+      
+      // コメント欄の位置とサイズを設定
+      commentArea.style.left = `${COMMENT_AREA.x * scale}px`;
+      commentArea.style.top = `${COMMENT_AREA.y * scale}px`;
+      commentArea.style.width = `${COMMENT_AREA.width * scale}px`;
+      commentArea.style.height = `${COMMENT_AREA.height * scale}px`;
+      commentArea.style.display = 'block';
+      commentArea.style.visibility = 'visible';
+      commentArea.style.opacity = '1';
+      
+      // フォントサイズもスケール（大きくする）
+      const baseFontSize = 24;
+      commentArea.style.fontSize = `${baseFontSize * scale}px`;
+      
+      // パディングもスケール
+      const basePadding = 15;
+      commentArea.style.padding = `${basePadding * scale}px`;
+      
+      // 石コンテナの高さを設定
+      const stoneHeight = naturalHeight * scale;
+      stoneContainer.style.minHeight = `${stoneHeight}px`;
+      
+      // 背景の高さを再計算
+      setTimeout(() => {
+        calculateBackgroundHeight();
+      }, 50);
     }
     
     // 背景画像のサイズに合わせてcaptionとpost2のサイズを調整
@@ -513,12 +529,6 @@
         }
         
         const posts = await response.json();
-        const commentArea = document.getElementById('commentArea');
-        
-        if (!commentArea) {
-          console.error('コメント欄が見つかりません');
-          return;
-        }
         
         // 時系列順（古い順）にソート（上から下に表示）
         posts.sort((a, b) => {
@@ -534,7 +544,7 @@
         }
         
         // 各投稿ごとに石を作成
-        posts.forEach(post => {
+        posts.forEach((post, index) => {
           // 石コンテナを作成
           const stoneContainer = document.createElement('div');
           stoneContainer.className = 'stone-image-container';
@@ -572,14 +582,21 @@
           stoneContainer.appendChild(commentArea);
           stonesContainer.appendChild(stoneContainer);
           
-          // 石画像とコメント欄の位置を調整
-          adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea);
+          // 石画像とコメント欄の位置を調整（画像読み込み後に実行）
+          stoneImage.onload = () => {
+            adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea);
+          };
+          
+          // 既に読み込まれている場合
+          if (stoneImage.complete) {
+            adjustStoneAndCommentArea(stoneContainer, stoneImage, commentArea);
+          }
         });
         
         // 背景の高さを再計算
         setTimeout(() => {
           calculateBackgroundHeight();
-        }, 100);
+        }, 500);
       } catch (error) {
         console.error('投稿データの読み込みエラー:', error);
       }
