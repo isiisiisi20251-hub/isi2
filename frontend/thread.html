@@ -174,9 +174,56 @@
         max-width: 924px;
       }
     }
+    /* ローディング画面 */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      transition: opacity 0.5s ease-out;
+    }
+    
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .loading-text {
+      color: #fff;
+      font-size: 18px;
+      margin-top: 20px;
+      font-family: 'Senobi-Gothic', sans-serif;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <!-- ローディング画面 -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">読み込み中...</div>
+  </div>
+  
   <div class="main-container" id="mainContainer">
     <div id="canvas-container">
       <canvas id="physics-canvas"></canvas>
@@ -372,12 +419,6 @@
       // 石の位置を更新するループ
       requestAnimationFrame(updateStones);
       
-      // 初期スクロール位置を最下部に設定
-      setTimeout(() => {
-        const container = document.getElementById('mainContainer');
-        container.scrollTop = container.scrollHeight;
-      }, 100);
-      
       // コンテナの高さはすべての石が作成された後に一度だけ設定される
     }
     
@@ -466,12 +507,32 @@
           setTimeout(() => {
             setTopOffset();
             adjustContainerHeight();
-            // 1秒ごとに順番に落下させる
+            
+            // ローディング画面を非表示にする
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+              loadingScreen.classList.add('hidden');
+              // アニメーション後に完全に削除
+              setTimeout(() => {
+                loadingScreen.style.display = 'none';
+              }, 500);
+            }
+            
+            // コンテナの高さが計算された後、画面下部にスクロール
+            setTimeout(() => {
+              const mainContainer = document.getElementById('mainContainer');
+              mainContainer.scrollTop = mainContainer.scrollHeight;
+              console.log(`初期スクロール位置を画面下部に設定: ${mainContainer.scrollTop}px`);
+            }, 100);
+            
+            // ローディング画面が消えた後、1秒ごとに順番に落下させる
+            // 時系列順（古い順）に落下させるため、indexの順番で実行
             stones.forEach((stone, index) => {
-        setTimeout(() => {
+              setTimeout(() => {
                 // 重力を有効にする（isStaticをfalseにする）
                 Matter.Body.setStatic(stone.body, false);
-              }, index * 1000); // 1秒間隔で落下
+                console.log(`石 ${index} を落下開始`);
+              }, 500 + (index * 1000)); // ローディング画面のフェードアウト後 + 1秒間隔で落下
             });
           }, 500);
         });
