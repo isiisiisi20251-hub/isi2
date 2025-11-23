@@ -112,6 +112,8 @@
       pointer-events: none;
       user-select: none;
       max-width: 100%; /* 背景の範囲を超えないように */
+      left: 0; /* 初期位置を0に設定 */
+      will-change: transform; /* パフォーマンス向上 */
     }
     
     /* スマホ向けの最適化（480px以下は100%表示） */
@@ -340,7 +342,8 @@
         const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
         
         // 落下開始位置（画面上部のランダムな位置、横幅の範囲内）
-        const margin = stoneWidth / 2; // 石の幅の半分をマージンとして確保
+        // 石が回転する可能性を考慮して、少し余裕を持たせる
+        const margin = stoneWidth * 0.6; // 回転を考慮してマージンを大きく
         const startX = margin + Math.random() * (containerWidth - margin * 2);
         const startY = -stoneHeight - index * 50; // 上から順番に配置
         
@@ -453,16 +456,38 @@
           element.style.display = 'block';
         }
         
-        // 石が左右の壁の範囲内に収まるように制限
-        const margin = stone.width / 2;
+        // 石が回転した際の実際の表示幅を計算（回転を考慮したバウンディングボックス）
+        const absCos = Math.abs(Math.cos(angle));
+        const absSin = Math.abs(Math.sin(angle));
+        const rotatedWidth = stone.width * absCos + stone.height * absSin;
+        const rotatedHeight = stone.width * absSin + stone.height * absCos;
+        
+        // 石が左右の壁の範囲内に収まるように制限（回転を考慮）
+        const margin = rotatedWidth / 2;
         x = Math.max(margin, Math.min(containerWidth - margin, x));
         
         // Matter.jsのボディの位置も更新（物理演算の整合性を保つ）
         Matter.Body.setPosition(body, { x: x, y: y });
         
-        // 画像要素の位置を更新（背景の範囲内に確実に収まるように）
-        const leftPosition = Math.max(0, Math.min(containerWidth - stone.width, x - stone.width / 2));
-        element.style.left = `${leftPosition}px`;
+        // 画像要素の位置を更新（背景の範囲内に確実に収まるように、回転を考慮）
+        // 石の中心位置を考慮して、左端が0未満にならないようにする
+        let leftPosition = x - rotatedWidth / 2;
+        // 左端が0未満になる場合は、石の中心位置を調整
+        if (leftPosition < 0) {
+          leftPosition = 0;
+          // 物理演算の位置も調整（左端に合わせる）
+          const adjustedX = rotatedWidth / 2;
+          Matter.Body.setPosition(body, { x: adjustedX, y: y });
+        }
+        // 右端がcontainerWidthを超える場合も調整
+        if (leftPosition + rotatedWidth > containerWidth) {
+          leftPosition = containerWidth - rotatedWidth;
+          // 物理演算の位置も調整（右端に合わせる）
+          const adjustedX = containerWidth - rotatedWidth / 2;
+          Matter.Body.setPosition(body, { x: adjustedX, y: y });
+        }
+        
+        element.style.left = `${Math.max(0, leftPosition)}px`;
         element.style.top = `${y - stone.height / 2}px`;
         element.style.transform = `rotate(${angle}rad)`;
         element.style.transformOrigin = 'center center';
