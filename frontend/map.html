@@ -133,11 +133,11 @@
     // ズームレベルに応じたピンのサイズを計算
     function getPinScale(zoom) {
       // ズームレベルに応じてサイズを調整（ズームが大きいほどピンも大きくなる）
-      // ズームレベル10-20の範囲で、scale 12-36の範囲にマッピング
+      // ズームレベル10-20の範囲で、scale 18-54の範囲にマッピング（1.5倍）
       const minZoom = 10;
       const maxZoom = 20;
-      const minScale = 12;
-      const maxScale = 36;
+      const minScale = 18;
+      const maxScale = 54;
       
       if (zoom <= minZoom) return minScale;
       if (zoom >= maxZoom) return maxScale;
@@ -236,7 +236,8 @@
         
         // 時系列順にピンを表示（アニメーション）
         postsWithLocation.forEach((post, index) => {
-          const color = pinColors[index % pinColors.length];
+          // 保存された色を使用、なければデフォルト色
+          let color = post.pinColor || pinColors[index % pinColors.length];
           
           setTimeout(() => {
             const marker = new google.maps.Marker({

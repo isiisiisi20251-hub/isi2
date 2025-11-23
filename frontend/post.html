@@ -116,6 +116,36 @@
       resize: vertical;
     }
     
+    .color-picker-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .color-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .color-option {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+    
+    .color-option.selected {
+      border-color: #333;
+      transform: scale(1.15);
+    }
+    
     .submit-button-container {
       display: flex;
       justify-content: center;
@@ -184,6 +214,16 @@
         <textarea id="comment" name="comment" rows="4"></textarea>
       </div>
       
+      <div class="color-picker-group">
+        <label>ピンの色</label>
+        <div class="color-options" id="colorOptions">
+          <div class="color-option" data-color="#F17900" style="background-color: #F17900;"></div>
+          <div class="color-option" data-color="#6466FF" style="background-color: #6466FF;"></div>
+          <div class="color-option" data-color="#00C27E" style="background-color: #00C27E;"></div>
+          <div class="color-option" data-color="#F2DD4E" style="background-color: #F2DD4E;"></div>
+        </div>
+      </div>
+      
       <div class="submit-button-container">
         <button class="submit-button" onclick="submitPost()">
           <img src="src/post_page/post_button.png" alt="投稿">
@@ -220,6 +260,36 @@
     }
     
     const stoneId = getStoneIdFromUrl();
+    
+    // ピンの色の配列
+    const pinColors = ['#F17900', '#6466FF', '#00C27E', '#F2DD4E'];
+    let selectedPinColor = null;
+    
+    // 色選択の初期化
+    function initColorPicker() {
+      // デフォルトで最初の色を選択
+      selectColor(pinColors[0]);
+      
+      // 色オプションにクリックイベントを追加
+      document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', function() {
+          const color = this.getAttribute('data-color');
+          selectColor(color);
+        });
+      });
+    }
+    
+    // 色を選択
+    function selectColor(color) {
+      selectedPinColor = color;
+      document.querySelectorAll('.color-option').forEach(option => {
+        if (option.getAttribute('data-color') === color) {
+          option.classList.add('selected');
+        } else {
+          option.classList.remove('selected');
+        }
+      });
+    }
 
     // Google Maps APIキーを取得して地図を初期化
     async function initMap() {
@@ -315,11 +385,17 @@
       }
       
       try {
+        if (!selectedPinColor) {
+          alert('ピンの色を選択してください');
+          return;
+        }
+        
         const postData = {
           stoneId: stoneId,
           nickname: nickname,
           comment: comment,
-          postLocation: selectedLocation
+          postLocation: selectedLocation,
+          pinColor: selectedPinColor
         };
         
         const response = await fetch(`${API_BASE_URL}/api/posts`, {
@@ -355,6 +431,9 @@
 
     // ページ読み込み時に地図を初期化
     initMap();
+    
+    // 色選択を初期化
+    initColorPicker();
     
     // スマホでの全面表示のための高さ設定
     function setViewportHeight() {

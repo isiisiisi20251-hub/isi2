@@ -57,13 +57,31 @@ async function initDatabase() {
         comment TEXT,
         post_location_lat DECIMAL(10, 8),
         post_location_lng DECIMAL(11, 8),
+        user_id VARCHAR(64),
+        pin_color VARCHAR(7),
         created_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+    
+    // ユーザーIDカラムを追加（既存テーブルにカラムがない場合）
+    await pool.query(`
+      ALTER TABLE posts 
+      ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)
+    `);
+    
+    // ピンの色カラムを追加（既存テーブルにカラムがない場合）
+    await pool.query(`
+      ALTER TABLE posts 
+      ADD COLUMN IF NOT EXISTS pin_color VARCHAR(7)
     `);
     
     // インデックスの作成
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_posts_stone_id ON posts(stone_id)
+    `);
+    
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_posts_ip_address ON posts(ip_address)
     `);
     
     console.log('Database tables initialized');
@@ -114,7 +132,8 @@ app.get('/api/posts', async (req, res) => {
     // 該当石の投稿を取得
     const result = await pool.query(
       `SELECT id, nickname, comment, post_location_lat as "postLocationLat", 
-              post_location_lng as "postLocationLng", created_at as "createdAt"
+              post_location_lng as "postLocationLng", user_id as "userId",
+              pin_color as "pinColor", created_at as "createdAt"
        FROM posts 
        WHERE stone_id = $1 
        ORDER BY created_at DESC`,
@@ -138,12 +157,15 @@ app.post('/api/posts', async (req, res) => {
       return res.status(400).json({ error: '石IDが取得できませんでした' });
     }
     
-    const { nickname, comment, postLocation } = req.body;
+    const { nickname, comment, postLocation, pinColor } = req.body;
     
     // バリデーション
     if (!nickname) {
       return res.status(400).json({ error: 'ニックネームは必須です' });
     }
+    
+    // ピンの色のバリデーション（#で始まる6桁の16進数）
+    const validPinColor = pinColor && /^#[0-9A-Fa-f]{6}$/.test(pinColor) ? pinColor : null;
     
     // 石が存在しない場合は作成
     await pool.query(
@@ -153,16 +175,18 @@ app.post('/api/posts', async (req, res) => {
     
     // 投稿を保存
     const result = await pool.query(
-      `INSERT INTO posts (stone_id, nickname, comment, post_location_lat, post_location_lng)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO posts (stone_id, nickname, comment, post_location_lat, post_location_lng, pin_color)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, nickname, comment, post_location_lat as "postLocationLat", 
-                 post_location_lng as "postLocationLng", created_at as "createdAt"`,
+                 post_location_lng as "postLocationLng", pin_color as "pinColor",
+                 created_at as "createdAt"`,
       [
         stoneId,
         nickname,
         comment || '',
         postLocation?.lat || null,
-        postLocation?.lng || null
+        postLocation?.lng || null,
+        validPinColor
       ]
     );
     
