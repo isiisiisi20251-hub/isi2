@@ -3,29 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>スレッド</title>
+  <title>石の掲示板</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <style>
-    @font-face {
-      font-family: 'Senobi-Gothic';
-      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Regular.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-    }
-    
-    @font-face {
-      font-family: 'Senobi-Gothic';
-      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Medium.ttf') format('truetype');
-      font-weight: 500;
-      font-style: normal;
-    }
-    
-    @font-face {
-      font-family: 'Senobi-Gothic';
-      src: url('src/font/MODI_Senobi-Gothic_2017_0702 2/Senobi-Gothic-Bold.ttf') format('truetype');
-      font-weight: bold;
-      font-style: normal;
-    }
-    
     * {
       margin: 0;
       padding: 0;
@@ -35,182 +15,80 @@
     body {
       width: 100vw;
       height: 100vh;
-      height: 100dvh; /* Dynamic Viewport Height for mobile */
+      height: 100dvh;
       overflow: hidden;
       margin: 0;
       padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #e8f5e9;
+      background-color: #000;
     }
     
     .main-container {
       width: 100%;
+      height: 100%;
       max-width: 924px;
       position: relative;
-      margin: 0 auto;
-      background-color: #e8f5e9;
-      overflow-x: hidden;
-      overflow-y: auto;
-      height: 100vh;
-      height: 100dvh;
-    }
-    
-    /* コンテンツが100vhを超える場合でもスクロールできるようにする */
-    .content-wrapper {
-      min-height: 100vh;
-      min-height: 100dvh;
-    }
-    
-    .stone-image-container {
-      position: relative;
-      width: 100%;
-      max-width: 924px;
       margin: 0 auto;
       background-image: url('src/thread_page/backgound.png');
-      background-repeat: repeat-y;
-      background-position: top center;
-      background-size: 100% auto;
-    }
-    
-    .caption-image-loader {
-      position: absolute;
-      visibility: hidden;
-      width: 0;
-      height: 0;
-    }
-    
-    .stone-image-loader {
-      position: absolute;
-      visibility: hidden;
-      width: 0;
-      height: 0;
-    }
-    
-    .stone-image {
-      /* 初期値は設定せず、JavaScriptで動的に設定 */
-      display: block;
-      position: relative;
-      z-index: 1;
-      box-sizing: border-box;
-    }
-    
-    .comment-area {
-      position: absolute;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 15px;
-      box-sizing: border-box;
-      z-index: 2;
-      font-family: 'Senobi-Gothic', sans-serif;
-      visibility: visible;
-      opacity: 1;
     }
     
-    .comment-area::-webkit-scrollbar {
-      width: 4px;
-    }
-    
-    .comment-area::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    
-    .comment-area::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 2px;
-    }
-    
-    .post-item {
-      color: #333;
-      font-family: 'Senobi-Gothic', sans-serif;
-      line-height: 1.6;
-      word-wrap: break-word;
-      margin-bottom: 20px;
-    }
-    
-    .post-item .nickname {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    
-    .post-item .comment {
-      white-space: pre-wrap;
-      margin-top: 10px;
-    }
-    
-    .post-item .timestamp {
-      color: #999;
-      margin-top: 10px;
-      font-size: 0.7em;
-    }
-    
-    .background-image-loader {
-      position: absolute;
-      visibility: hidden;
-      width: 0;
-      height: 0;
-    }
-    
-    .content-wrapper {
+    #canvas-container {
+      width: 100%;
+      height: 100%;
       position: relative;
-      z-index: 1;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
+      min-height: 200vh; /* 最低でも2画面分の高さを確保 */
     }
     
-    #stonesContainer {
+    #physics-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      display: flex;
-      flex-direction: column;
+      height: 100%;
+      pointer-events: none;
     }
     
-    .posts-container {
-      flex: 1;
-      padding: 20px;
+    .bottom-ui {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 924px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      align-items: center;
+      z-index: 1000;
+      pointer-events: none;
     }
     
     .caption-container {
       width: 100%;
-      max-width: 924px;
-      margin: 0 auto;
-      padding: 0;
-      position: relative;
-      z-index: 2;
       display: flex;
       justify-content: center;
-      background-image: url('src/thread_page/backgound.png');
-      background-repeat: repeat-y;
-      background-position: top center;
-      background-size: 100% auto;
-      flex-shrink: 0;
+      margin-bottom: 0;
     }
     
     .caption-container img {
       width: 100%;
+      max-width: 924px;
       height: auto;
       display: block;
-      max-width: var(--bg-width, 100%);
     }
     
-    .fixed-post-button {
-      position: relative;
-      z-index: 1000;
-      max-width: 924px;
+    .post-button-container {
       width: 100%;
-      margin: 0 auto;
       display: flex;
       justify-content: center;
-      padding: 0;
-      background-color: transparent;
-      flex-shrink: 0;
+      margin-top: 0;
+      pointer-events: auto;
     }
     
-    .fixed-post-button button {
+    .post-button {
       background: none;
       border: none;
       cursor: pointer;
@@ -218,15 +96,21 @@
       pointer-events: auto;
     }
     
-    .fixed-post-button img {
-      width: var(--bg-width, 100%);
-      max-width: var(--bg-width, 100%);
+    .post-button img {
+      width: auto;
       height: auto;
+      max-width: 200px;
       display: block;
     }
     
-    .fixed-post-button button:active {
+    .post-button:active {
       opacity: 0.8;
+    }
+    
+    .stone-image {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
     }
     
     /* スマホ向けの最適化（480px以下は100%表示） */
@@ -236,11 +120,7 @@
         width: 100vw;
       }
       
-      .stone-image-container {
-        max-width: 100%;
-      }
-      
-      .fixed-post-button {
+      .bottom-ui {
         max-width: 100%;
       }
     }
@@ -251,42 +131,43 @@
         max-width: 924px;
       }
       
-      .stone-image-container {
-        max-width: 924px;
-      }
-      
-      .fixed-post-button {
+      .bottom-ui {
         max-width: 924px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="main-container">
-    <img src="src/thread_page/backgound.png" alt="" class="background-image-loader" id="bgImageLoader">
-    <img src="src/thread_page/caption.png" alt="" class="caption-image-loader" id="captionImageLoader">
-    <img src="src/stones/stone1.png" alt="" class="stone-image-loader" id="stoneImageLoader">
-    <img src="src/thread_page/post2.png" alt="" class="background-image-loader" id="post2ImageLoader">
-    <img src="src/thread_page/post2.png" alt="" class="background-image-loader" id="post2ImageLoader">
+  <div class="main-container" id="mainContainer">
+    <div id="canvas-container">
+      <canvas id="physics-canvas"></canvas>
+    </div>
     
-    <div class="content-wrapper" id="contentWrapper">
-      <div id="stonesContainer">
-        <!-- 各コメントごとに石がここに動的に追加されます -->
-      </div>
-      
+    <div class="bottom-ui">
       <div class="caption-container">
-        <img src="src/thread_page/caption.png" alt="キャプション" id="captionImage">
+        <img src="src/thread_page/caption.png" alt="Caption" id="captionImage">
       </div>
-      
-      <div class="fixed-post-button">
-        <button onclick="goToPost()">
-          <img src="src/thread_page/post2.png" alt="投稿" id="postButtonImage">
+      <div class="post-button-container">
+        <button class="post-button" onclick="goToPost()">
+          <img src="src/thread_page/post2.png" alt="投稿">
         </button>
       </div>
     </div>
   </div>
 
   <script>
+    // Matter.js のエンジンとレンダラー
+    let engine;
+    let render;
+    let world;
+    let ground;
+    let stones = [];
+    let stoneImages = [];
+    let captionImage;
+    let captionHeight = 0;
+    let containerWidth = 0;
+    let containerHeight = 0;
+    
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
       : 'https://isi2-backend.onrender.com';
@@ -296,10 +177,8 @@
       const urlParams = new URLSearchParams(window.location.search);
       const stoneId = urlParams.get('stoneId');
       
-      // URLパラメータがない場合は、ホスト名から取得を試みる
       if (!stoneId) {
         const host = window.location.hostname;
-        // isi2.onrender.com → stone-002
         const match = host.match(/^isi(\d+)/);
         if (match) {
           const num = match[1].padStart(3, '0');
@@ -312,277 +191,75 @@
     
     const stoneId = getStoneIdFromUrl();
     
-    // コメント欄の座標（元画像サイズに対する相対座標）
-    const COMMENT_AREA = {
-      x: 175,
-      y: 139,
-      width: 546,
-      height: 279
-    };
-    
-    // ステップ1: 必要なbackgound.pngの数を計算
-    function calculateRequiredBackgroundCount() {
-      const bgImageLoader = document.getElementById('bgImageLoader');
-      const captionImageLoader = document.getElementById('captionImageLoader');
-      const stoneImageLoader = document.getElementById('stoneImageLoader');
-      const post2ImageLoader = document.getElementById('post2ImageLoader');
-      const captionImage = document.getElementById('captionImage');
-      const stonesContainer = document.getElementById('stonesContainer');
-      const mainContainer = document.querySelector('.main-container');
-      
-      if (!bgImageLoader || !captionImageLoader || !stoneImageLoader || !post2ImageLoader ||
-          !captionImage || !stonesContainer || !mainContainer) {
-        return null;
-      }
-      
-      // すべての画像が読み込まれるまで待つ
-      if (!bgImageLoader.complete || !captionImageLoader.complete || 
-          !stoneImageLoader.complete || !post2ImageLoader.complete || !captionImage.complete) {
-        return null;
-      }
-      
-      const containerWidth = mainContainer.offsetWidth || Math.min(window.innerWidth, 924);
-      
-      // バックグラウンドの元の幅と高さ
-      const bgWidth = bgImageLoader.naturalWidth;
-      const bgHeight = bgImageLoader.naturalHeight;
-      
-      // バックグラウンドのスケール後の幅を計算（これが基準になる）
-      // バックグラウンドの幅を損なわないように、元の幅を優先
-      const bgScaledWidth = Math.min(bgWidth, containerWidth, 924);
-      const bgScale = bgScaledWidth / bgWidth;
-      
-      // すべての画像はバックグラウンドのスケール後の幅に合わせる
-      const maxWidth = bgScaledWidth;
-      
-      const stoneWidth = stoneImageLoader.naturalWidth;
-      const stoneHeight = stoneImageLoader.naturalHeight;
-      const stoneScale = maxWidth / stoneWidth;
-      
-      const captionWidth = captionImageLoader.naturalWidth;
-      const captionHeight = captionImageLoader.naturalHeight;
-      const captionScale = maxWidth / captionWidth;
-      
-      const post2Width = post2ImageLoader.naturalWidth;
-      const post2Height = post2ImageLoader.naturalHeight;
-      const post2Scale = maxWidth / post2Width;
-      
-      // スケール後の高さを計算
-      const scaledStoneHeight = stoneHeight * stoneScale;
-      const scaledCaptionHeight = captionHeight * captionScale;
-      const scaledPost2Height = post2Height * post2Scale;
-      const scaledBgHeight = bgHeight * bgScale;
-      
-      // 投稿数を取得
-      const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-      const postCount = stoneContainers.length;
-      
-      // 必要な高さ = 投稿の石の縦のピクセル数 × 投稿数 + caption.pngの縦のピクセル数 + post2.pngの縦のピクセル数
-      const totalHeight = (scaledStoneHeight * postCount) + scaledCaptionHeight + scaledPost2Height;
-      
-      // 必要な背景画像の個数を計算（切り上げ）
-      const bgCount = Math.ceil(totalHeight / scaledBgHeight);
-      
-      console.log('背景計算:', {
-        postCount,
-        scaledStoneHeight,
-        scaledCaptionHeight,
-        totalHeight,
-        scaledBgHeight,
-        bgCount
-      });
-      
-      return {
-        bgCount,
-        scaledBgHeight,
-        scaledStoneHeight,
-        scaledCaptionHeight,
-        scaledPost2Height,
-        maxWidth,
-        bgScale,
-        stoneScale,
-        captionScale,
-        post2Scale
-      };
+    // 投稿ページへ遷移
+    function goToPost() {
+      const url = stoneId ? `post.html?stoneId=${stoneId}` : 'post.html';
+      window.location.href = url;
     }
     
-    // ステップ2: caption.pngとpost2.pngを画面最下部に下合わせで表示
-    function positionBottomElements(calcData) {
-      if (!calcData) return;
+    // 初期化
+    async function init() {
+      // 画面サイズを取得
+      containerWidth = document.getElementById('mainContainer').offsetWidth;
+      containerHeight = window.innerHeight;
       
-      const captionContainer = document.querySelector('.caption-container');
-      const postButton = document.querySelector('.fixed-post-button');
-      const captionImage = document.getElementById('captionImage');
-      const postButtonImage = document.getElementById('postButtonImage');
-      const contentWrapper = document.getElementById('contentWrapper');
-      
-      if (captionContainer && captionImage) {
-        // captionの幅を設定
-        captionImage.style.width = `${calcData.maxWidth}px`;
-        captionImage.style.maxWidth = `${calcData.maxWidth}px`;
-        
-        // captionコンテナの高さを設定（caption画像の実際の高さ以上にする）
-        // 背景が必要な高さを確保するため、背景画像の高さの倍数にする
-        const captionBgCount = Math.ceil(calcData.scaledCaptionHeight / calcData.scaledBgHeight);
-        captionContainer.style.minHeight = `${captionBgCount * calcData.scaledBgHeight}px`;
-      }
-      
-      if (postButton && postButtonImage) {
-        // post2の幅を設定
-        postButtonImage.style.width = `${calcData.maxWidth}px`;
-        postButtonImage.style.maxWidth = `${calcData.maxWidth}px`;
-      }
-      
-      // コンテンツラッパーの高さを設定（すべての要素の高さの合計）
-      // 石の高さ + captionの高さ + post2の高さを確保
-      if (contentWrapper && calcData.bgCount) {
-        // 背景枚数分の高さを設定（これで全要素が表示される）
-        contentWrapper.style.minHeight = `${calcData.bgCount * calcData.scaledBgHeight}px`;
-      }
-    }
-    
-    // ステップ3: コメント欄を積み上げていく
-    function setupStones(calcData) {
-      if (!calcData) return;
-      
-      const stonesContainer = document.getElementById('stonesContainer');
-      if (!stonesContainer) return;
-      
-      const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-      
-      stoneContainers.forEach(stoneContainer => {
-        const stoneImg = stoneContainer.querySelector('.stone-image');
-        if (stoneImg && stoneImg.complete) {
-          // 各石コンテナに必要な背景画像の個数を計算
-          const bgCount = Math.ceil(calcData.scaledStoneHeight / calcData.scaledBgHeight);
-          stoneContainer.style.minHeight = `${bgCount * calcData.scaledBgHeight}px`;
+      // キャプション画像の高さを取得
+      const captionImg = document.getElementById('captionImage');
+      await new Promise((resolve) => {
+        if (captionImg.complete) {
+          resolve();
+        } else {
+          captionImg.onload = resolve;
         }
       });
-    }
-    
-    // 背景画像の必要な高さを計算して設定（統合関数）
-    function calculateBackgroundHeight() {
-      const calcData = calculateRequiredBackgroundCount();
-      if (calcData) {
-        positionBottomElements(calcData);
-        setupStones(calcData);
-      }
-    }
-    
-    // 石画像のサイズを調整（個別の石コンテナに対して）
-    function adjustStoneSize(stoneContainer, stoneImage) {
-      const mainContainer = document.querySelector('.main-container');
+      captionHeight = captionImg.offsetHeight;
       
-      if (!stoneImage || !stoneContainer || !mainContainer) {
-        return;
-      }
+      // Matter.js エンジンの作成
+      engine = Matter.Engine.create();
+      world = engine.world;
+      engine.world.gravity.y = 0.8; // 重力の強さ
+      engine.world.gravity.scale = 0.001;
       
-      // 画像のサイズを確認（確実に読み込まれるまで待つ）
-      if (stoneImage.naturalWidth === 0 || stoneImage.naturalHeight === 0) {
-        // 画像がまだ読み込まれていない場合は再試行
-        setTimeout(() => adjustStoneSize(stoneContainer, stoneImage), 100);
-        return;
-      }
+      // レンダラーの作成（非表示、物理演算のみ）
+      const canvas = document.getElementById('physics-canvas');
+      canvas.width = containerWidth;
+      canvas.height = containerHeight * 3; // 十分な高さを確保
       
-      // バックグラウンドの幅を基準にする
-      const bgImageLoader = document.getElementById('bgImageLoader');
-      if (!bgImageLoader || !bgImageLoader.complete) {
-        setTimeout(() => adjustStoneSize(stoneContainer, stoneImage), 100);
-        return;
-      }
-      
-      // コンテナの幅を取得
-      let containerWidth = mainContainer.offsetWidth || mainContainer.clientWidth;
-      if (!containerWidth || containerWidth === 0) {
-        containerWidth = Math.min(window.innerWidth || 924, 924);
-      }
-      
-      // バックグラウンドの元の幅と高さ
-      const bgNaturalWidth = bgImageLoader.naturalWidth;
-      const bgNaturalHeight = bgImageLoader.naturalHeight;
-      
-      // バックグラウンドのスケール後の幅を計算（これが基準になる）
-      const bgScaledWidth = Math.min(bgNaturalWidth, containerWidth, 924);
-      const bgScale = bgScaledWidth / bgNaturalWidth;
-      
-      const naturalWidth = stoneImage.naturalWidth;
-      const naturalHeight = stoneImage.naturalHeight;
-      
-      // バックグラウンドのスケール後の幅に合わせて石のサイズを決定
-      // 石の元の幅とバックグラウンドのスケール後の幅の小さい方を使用
-      const maxWidth = Math.min(naturalWidth, bgScaledWidth);
-      
-      // スケール比を計算
-      const scale = maxWidth / naturalWidth;
-      
-      // 石画像のサイズを設定（画像の元のアスペクト比を維持）
-      stoneImage.style.width = `${maxWidth}px`;
-      stoneImage.style.height = 'auto';
-      stoneImage.style.maxWidth = `${maxWidth}px`;
-      stoneImage.style.minWidth = `${maxWidth}px`;
-      stoneImage.style.display = 'block';
-      stoneImage.style.flexShrink = '0';
-      stoneImage.style.flexGrow = '0';
-      stoneImage.style.objectFit = 'contain';
-      stoneImage.style.boxSizing = 'border-box';
-      
-      // 石コンテナの幅も設定（画像の幅に合わせる）
-      stoneContainer.style.width = `${maxWidth}px`;
-      stoneContainer.style.maxWidth = `${maxWidth}px`;
-      stoneContainer.style.minWidth = `${maxWidth}px`;
-      stoneContainer.style.margin = '0 auto';
-      stoneContainer.style.display = 'block';
-      stoneContainer.style.position = 'relative';
-      
-      // 石コンテナの高さを設定
-      const stoneHeight = naturalHeight * scale;
-      stoneContainer.style.minHeight = `${stoneHeight}px`;
-      
-      // 背景の高さを再計算（一度だけ実行するように）
-      // 複数回呼ばれないようにフラグで制御
-      if (!stoneContainer.dataset.adjusted) {
-        stoneContainer.dataset.adjusted = 'true';
-        setTimeout(() => {
-          calculateBackgroundHeight();
-        }, 50);
-      }
-    }
-    
-    // 背景画像のサイズに合わせてcaptionとpost2のサイズを調整
-    function adjustImageSizes() {
-      const bgImage = document.getElementById('bgImageLoader');
-      const captionImage = document.getElementById('captionImage');
-      const postButtonImage = document.getElementById('postButtonImage');
-      const mainContainer = document.querySelector('.main-container');
-      
-      if (bgImage && captionImage && postButtonImage && mainContainer) {
-        bgImage.onload = function() {
-          const bgWidth = bgImage.naturalWidth;
-          const containerWidth = mainContainer.offsetWidth;
-          const maxWidth = Math.min(bgWidth, containerWidth, 924);
-          
-          // CSS変数として設定
-          document.documentElement.style.setProperty('--bg-width', `${maxWidth}px`);
-          
-          // captionとpost2の幅を設定
-          captionImage.style.width = `${maxWidth}px`;
-          captionImage.style.maxWidth = `${maxWidth}px`;
-          postButtonImage.style.width = `${maxWidth}px`;
-          postButtonImage.style.maxWidth = `${maxWidth}px`;
-          
-          // 背景の高さを計算
-          calculateBackgroundHeight();
-        };
-        
-        // 既に読み込まれている場合
-        if (bgImage.complete) {
-          bgImage.onload();
+      // 地面（キャプション）の作成
+      const groundY = containerHeight - captionHeight;
+      ground = Matter.Bodies.rectangle(
+        containerWidth / 2,
+        groundY,
+        containerWidth,
+        10,
+        {
+          isStatic: true,
+          label: 'ground'
         }
-      }
+      );
+      Matter.World.add(world, ground);
+      
+      // 投稿データを取得して石を生成
+      await loadPostsAndCreateStones();
+      
+      // 物理演算のループを開始
+      Matter.Runner.run(engine);
+      
+      // 石の位置を更新するループ
+      requestAnimationFrame(updateStones);
+      
+      // 初期スクロール位置を最下部に設定
+      setTimeout(() => {
+        const container = document.getElementById('mainContainer');
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+      
+      // スクロール時にコンテナの高さを調整
+      adjustContainerHeight();
     }
     
-    // 投稿データを取得して表示
-    async function loadPosts() {
+    // 投稿データを取得して石を生成
+    async function loadPostsAndCreateStones() {
       if (!stoneId) {
         console.error('石IDが取得できませんでした');
         return;
@@ -597,153 +274,195 @@
         
         const posts = await response.json();
         
-        // 時系列順（古い順）にソート（上から下に表示）
+        // 時系列順（古い順）にソート
         posts.sort((a, b) => {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
           return dateA - dateB;
         });
         
-        const stonesContainer = document.getElementById('stonesContainer');
-        if (!stonesContainer) {
-          console.error('石コンテナが見つかりません');
-          return;
+        // 各投稿に対して石を生成（少し遅延させて順番に落下させる）
+        posts.forEach((post, index) => {
+          setTimeout(() => {
+            createStone(post, index);
+          }, index * 300); // 300ms間隔で落下
+        });
+      } catch (error) {
+        console.error('投稿データの取得エラー:', error);
+      }
+    }
+    
+    // 石を作成
+    function createStone(post, index) {
+      // 石の画像を読み込む
+      const stoneImg = new Image();
+      stoneImg.src = 'src/stones/stone1.png';
+      
+      stoneImg.onload = () => {
+        // 石のサイズを決定（画像のアスペクト比を保持）
+        const stoneWidth = Math.min(containerWidth * 0.3, 150);
+        const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
+        
+        // 落下開始位置（画面上部のランダムな位置）
+        const startX = containerWidth * 0.2 + Math.random() * (containerWidth * 0.6);
+        const startY = -stoneHeight - index * 50; // 上から順番に配置
+        
+        // Matter.js のボディを作成
+        const stoneBody = Matter.Bodies.rectangle(
+          startX,
+          startY,
+          stoneWidth,
+          stoneHeight,
+          {
+            restitution: 0.3, // 反発係数
+            friction: 0.8,
+            density: 0.001,
+            label: `stone-${post.id}`
+          }
+        );
+        
+        Matter.World.add(world, stoneBody);
+        
+        // 石の画像要素を作成
+        const stoneElement = document.createElement('img');
+        stoneElement.src = stoneImg.src;
+        stoneElement.className = 'stone-image';
+        stoneElement.style.width = `${stoneWidth}px`;
+        stoneElement.style.height = `${stoneHeight}px`;
+        stoneElement.style.display = 'block';
+        
+        // 投稿情報を表示するためのdivを作成
+        const postInfo = document.createElement('div');
+        postInfo.style.position = 'absolute';
+        postInfo.style.width = `${stoneWidth * 0.9}px`;
+        postInfo.style.padding = '5px';
+        postInfo.style.fontSize = '10px';
+        postInfo.style.color = '#333';
+        postInfo.style.textAlign = 'center';
+        postInfo.style.wordWrap = 'break-word';
+        postInfo.style.overflow = 'hidden';
+        postInfo.style.pointerEvents = 'none';
+        postInfo.style.userSelect = 'none';
+        
+        // ニックネームとコメントを表示
+        const nicknameDiv = document.createElement('div');
+        nicknameDiv.style.fontWeight = 'bold';
+        nicknameDiv.style.marginBottom = '2px';
+        nicknameDiv.textContent = post.nickname || '匿名';
+        
+        const commentDiv = document.createElement('div');
+        commentDiv.style.fontSize = '9px';
+        commentDiv.textContent = post.comment || '';
+        
+        postInfo.appendChild(nicknameDiv);
+        if (post.comment) {
+          postInfo.appendChild(commentDiv);
         }
         
-        // コメントの石は表示しない
-        // 各投稿ごとに石を作成する処理をコメントアウト
-        // posts.forEach((post, index) => {
-        //   // 石コンテナを作成
-        //   const stoneContainer = document.createElement('div');
-        //   stoneContainer.className = 'stone-image-container';
-        //   
-        //   // 石画像を作成
-        //   const stoneImage = document.createElement('img');
-        //   stoneImage.src = 'src/stones/stone1.png';
-        //   stoneImage.alt = '石';
-        //   stoneImage.className = 'stone-image';
-        //   
-        //   // 要素を組み立て（コメント欄は表示しない）
-        //   stoneContainer.appendChild(stoneImage);
-        //   stonesContainer.appendChild(stoneContainer);
-        //   
-        //   // 石画像のサイズを調整（画像読み込み後に実行）
-        //   stoneImage.onload = () => {
-        //     adjustStoneSize(stoneContainer, stoneImage);
-        //   };
-        //   
-        //   // 既に読み込まれている場合
-        //   if (stoneImage.complete) {
-        //     adjustStoneSize(stoneContainer, stoneImage);
-        //   }
-        // });
+        document.getElementById('canvas-container').appendChild(stoneElement);
+        stoneElement.appendChild(postInfo);
         
-        // 背景の高さを再計算
-        setTimeout(() => {
-          calculateBackgroundHeight();
-          // 画面ロード時の初期位置を一番下に
-          scrollToBottom();
-        }, 500);
-      } catch (error) {
-        console.error('投稿データの読み込みエラー:', error);
-      }
+        // 石の情報を保存
+        stones.push({
+          body: stoneBody,
+          element: stoneElement,
+          postInfo: postInfo,
+          width: stoneWidth,
+          height: stoneHeight,
+          post: post
+        });
+        
+        stoneImages.push(stoneImg);
+      };
     }
     
-    // HTMLエスケープ関数
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    // 石の位置を更新
+    function updateStones() {
+      stones.forEach(stone => {
+        const body = stone.body;
+        const element = stone.element;
+        const postInfo = stone.postInfo;
+        
+        // Matter.js の位置を取得
+        const x = body.position.x;
+        const y = body.position.y;
+        const angle = body.angle;
+        
+        // 画像要素の位置を更新
+        element.style.left = `${x - stone.width / 2}px`;
+        element.style.top = `${y - stone.height / 2}px`;
+        element.style.transform = `rotate(${angle}rad)`;
+        element.style.transformOrigin = 'center center';
+        
+        // 投稿情報の位置も更新（回転に合わせて調整）
+        postInfo.style.left = `${stone.width * 0.05}px`;
+        postInfo.style.top = `${stone.height * 0.1}px`;
+        postInfo.style.transform = `rotate(${-angle}rad)`;
+        postInfo.style.transformOrigin = 'center center';
+      });
+      
+      // コンテナの高さを調整
+      adjustContainerHeight();
+      
+      requestAnimationFrame(updateStones);
     }
     
-    // 最下部にスクロール
-    function scrollToBottom() {
-      const mainContainer = document.querySelector('.main-container');
-      if (mainContainer) {
-        // 少し遅延を入れて確実にスクロール
-        setTimeout(() => {
-          mainContainer.scrollTop = mainContainer.scrollHeight;
-        }, 100);
-      }
+    // コンテナの高さを調整（石が画面外に出ないように）
+    function adjustContainerHeight() {
+      const container = document.getElementById('canvas-container');
+      let maxY = containerHeight;
+      
+      stones.forEach(stone => {
+        const y = stone.body.position.y;
+        if (y + stone.height / 2 > maxY) {
+          maxY = y + stone.height / 2;
+        }
+      });
+      
+      // 最低でも2画面分の高さを確保し、石が画面外に出ないように余裕を持たせる
+      const minHeight = containerHeight * 2;
+      const newHeight = Math.max(minHeight, maxY + containerHeight * 0.5);
+      container.style.minHeight = `${newHeight}px`;
+      
+      // キャンバスの高さも更新
+      const canvas = document.getElementById('physics-canvas');
+      canvas.height = newHeight;
     }
     
-    // 投稿ページへ遷移
-    function goToPost() {
-      const url = stoneId ? `post.html?stoneId=${stoneId}` : 'post.html';
-      window.location.href = url;
-    }
-    
-    // ページ読み込み時に投稿を読み込む
-    loadPosts();
-    
-    // 画像サイズの調整
-    adjustImageSizes();
-    calculateBackgroundHeight();
-    
-    // ページ読み込み後に最下部にスクロール（念のため）
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        adjustImageSizes();
-        calculateBackgroundHeight();
-        scrollToBottom();
-      }, 500);
-    });
-    
-    // スマホでの全面表示のための高さ設定
+    // ビューポートの高さを設定
     function setViewportHeight() {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
       const body = document.body;
-      if (body) {
+      const mainContainer = document.getElementById('mainContainer');
+      if (body && mainContainer) {
         body.style.height = `${window.innerHeight}px`;
+        containerHeight = window.innerHeight;
+        
+        // 地面の位置を更新
+        if (ground) {
+          const captionImg = document.getElementById('captionImage');
+          const newGroundY = containerHeight - captionHeight;
+          Matter.Body.setPosition(ground, {
+            x: containerWidth / 2,
+            y: newGroundY
+          });
+        }
       }
-      // mainContainerの高さは固定しない（コンテンツに応じて伸びるように）
     }
     
     // 初期設定とリサイズ時の処理
     setViewportHeight();
-    
-    // リサイズ時の処理をデバウンス
-    let resizeTimer;
     window.addEventListener('resize', () => {
       setViewportHeight();
-      // デバウンス処理（300ms後に実行）
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        adjustImageSizes();
-        // すべての石コンテナを再調整
-        const stonesContainer = document.getElementById('stonesContainer');
-        if (stonesContainer) {
-          const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-          stoneContainers.forEach(container => {
-            const stoneImage = container.querySelector('.stone-image');
-            if (stoneImage) {
-              adjustStoneSize(container, stoneImage);
-            }
-          });
-        }
-        calculateBackgroundHeight();
-      }, 300);
+      containerWidth = document.getElementById('mainContainer').offsetWidth;
+      const canvas = document.getElementById('physics-canvas');
+      canvas.width = containerWidth;
     });
-    window.addEventListener('orientationchange', () => {
-      setViewportHeight();
-      setTimeout(() => {
-        scrollToBottom();
-        adjustImageSizes();
-        // すべての石コンテナを再調整
-        const stonesContainer = document.getElementById('stonesContainer');
-        if (stonesContainer) {
-          const stoneContainers = stonesContainer.querySelectorAll('.stone-image-container');
-          stoneContainers.forEach(container => {
-            const stoneImage = container.querySelector('.stone-image');
-            if (stoneImage) {
-              adjustStoneSize(container, stoneImage);
-            }
-          });
-        }
-        calculateBackgroundHeight();
-      }, 300);
-    });
+    window.addEventListener('orientationchange', setViewportHeight);
+    
+    // ページ読み込み時に初期化
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>
