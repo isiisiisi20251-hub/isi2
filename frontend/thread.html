@@ -344,10 +344,33 @@
     function createStone(post, index) {
       // 共有画像が読み込まれているか確認
       const createStoneElement = (stoneImg) => {
-        // 石のサイズを決定（画像のアスペクト比を保持）
-        // 石を大きくして投稿情報が見やすくなるようにする
-        const stoneWidth = Math.min(containerWidth * 0.5, 250);
-        const stoneHeight = (stoneImg.height / stoneImg.width) * stoneWidth;
+        // オリジナルサイズを取得
+        const originalWidth = stoneImg.naturalWidth || 970; // オリジナル幅: 970px
+        const originalHeight = stoneImg.naturalHeight || 567; // オリジナル高さ: 567px
+        
+        // コメントエリアのオリジナル座標（970px幅を基準）
+        const commentAreaOriginal = {
+          x: 175,
+          y: 139,
+          width: 546,
+          height: 279
+        };
+        
+        // 画面幅に合わせてスケーリング（最大924px）
+        const maxDisplayWidth = Math.min(containerWidth, 924);
+        const scale = maxDisplayWidth / originalWidth;
+        
+        // スケール後の石のサイズ
+        const stoneWidth = originalWidth * scale;
+        const stoneHeight = originalHeight * scale;
+        
+        // スケール後のコメントエリアの座標
+        const commentArea = {
+          x: commentAreaOriginal.x * scale,
+          y: commentAreaOriginal.y * scale,
+          width: commentAreaOriginal.width * scale,
+          height: commentAreaOriginal.height * scale
+        };
         
         // 落下開始位置（画面上部のランダムな位置、横幅の範囲内）
         // 石が回転する可能性を考慮して、少し余裕を持たせる
@@ -384,70 +407,73 @@
         // 石の画像要素を作成（共有画像を使用）
         const stoneElement = document.createElement('img');
         stoneElement.src = stoneImg.src;
-        stoneElement.style.width = '100%';
-        stoneElement.style.height = '100%';
+        stoneElement.style.width = `${stoneWidth}px`;
+        stoneElement.style.height = `${stoneHeight}px`;
         stoneElement.style.display = 'block';
         stoneElement.style.objectFit = 'contain';
         stoneElement.loading = 'lazy'; // 遅延読み込み
         
-        // 投稿情報を表示するためのdivを作成
+        // 投稿情報を表示するためのdivを作成（コメントエリアの位置に配置）
         const postInfo = document.createElement('div');
         postInfo.style.position = 'absolute';
-        postInfo.style.top = '0';
-        postInfo.style.left = '0';
-        postInfo.style.width = '100%';
-        postInfo.style.height = '100%';
+        postInfo.style.top = `${commentArea.y}px`;
+        postInfo.style.left = `${commentArea.x}px`;
+        postInfo.style.width = `${commentArea.width}px`;
+        postInfo.style.height = `${commentArea.height}px`;
         postInfo.style.pointerEvents = 'none';
         postInfo.style.userSelect = 'none';
         postInfo.style.zIndex = '10';
+        postInfo.style.overflow = 'hidden';
         
         // 投稿情報の背景（半透明の白）
         const postInfoBg = document.createElement('div');
         postInfoBg.style.position = 'absolute';
-        postInfoBg.style.top = '15%';
-        postInfoBg.style.left = '8%';
-        postInfoBg.style.width = '84%';
-        postInfoBg.style.height = 'auto';
-        postInfoBg.style.minHeight = '50%';
-        postInfoBg.style.maxHeight = '70%';
+        postInfoBg.style.top = '0';
+        postInfoBg.style.left = '0';
+        postInfoBg.style.width = '100%';
+        postInfoBg.style.height = '100%';
         postInfoBg.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         postInfoBg.style.borderRadius = '10px';
-        postInfoBg.style.padding = `${Math.max(8, stoneWidth * 0.04)}px`;
+        postInfoBg.style.padding = `${Math.max(8, stoneWidth * 0.02)}px`;
         postInfoBg.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.25)';
         postInfoBg.style.pointerEvents = 'none';
         postInfoBg.style.display = 'flex';
         postInfoBg.style.flexDirection = 'column';
         postInfoBg.style.justifyContent = 'center';
         postInfoBg.style.alignItems = 'center';
+        postInfoBg.style.boxSizing = 'border-box';
         
         // ニックネームとコメントを表示するコンテナ
         const postContent = document.createElement('div');
         postContent.style.position = 'relative';
         postContent.style.width = '100%';
+        postContent.style.height = '100%';
         postContent.style.textAlign = 'center';
         postContent.style.wordWrap = 'break-word';
-        postContent.style.overflow = 'hidden';
+        postContent.style.overflow = 'auto';
         postContent.style.display = 'flex';
         postContent.style.flexDirection = 'column';
         postContent.style.justifyContent = 'center';
         postContent.style.alignItems = 'center';
+        postContent.style.boxSizing = 'border-box';
         
         // ニックネームとコメントを表示
         const nicknameDiv = document.createElement('div');
         nicknameDiv.style.fontWeight = 'bold';
-        nicknameDiv.style.fontSize = `${Math.max(12, stoneWidth * 0.06)}px`;
+        nicknameDiv.style.fontSize = `${Math.max(12, stoneWidth * 0.04)}px`;
         nicknameDiv.style.color = '#333';
-        nicknameDiv.style.marginBottom = `${Math.max(4, stoneWidth * 0.015)}px`;
+        nicknameDiv.style.marginBottom = `${Math.max(4, stoneWidth * 0.01)}px`;
         nicknameDiv.style.lineHeight = '1.3';
         nicknameDiv.style.wordBreak = 'break-word';
         nicknameDiv.textContent = post.nickname || '匿名';
         
         const commentDiv = document.createElement('div');
-        commentDiv.style.fontSize = `${Math.max(10, stoneWidth * 0.05)}px`;
+        commentDiv.style.fontSize = `${Math.max(10, stoneWidth * 0.035)}px`;
         commentDiv.style.color = '#555';
         commentDiv.style.lineHeight = '1.4';
-        commentDiv.style.maxHeight = `${stoneHeight * 0.4}px`;
-        commentDiv.style.overflow = 'hidden';
+        commentDiv.style.width = '100%';
+        commentDiv.style.height = '100%';
+        commentDiv.style.overflow = 'auto';
         commentDiv.style.wordBreak = 'break-word';
         commentDiv.style.overflowWrap = 'break-word';
         commentDiv.textContent = post.comment || '';
@@ -477,7 +503,7 @@
       };
       
       // 共有画像が読み込まれている場合は即座に作成、そうでなければ読み込みを待つ
-      if (sharedStoneImage.complete) {
+      if (sharedStoneImage.complete && sharedStoneImage.naturalWidth > 0) {
         createStoneElement(sharedStoneImage);
       } else {
         sharedStoneImage.onload = () => {
