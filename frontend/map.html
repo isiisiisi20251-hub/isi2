@@ -142,10 +142,21 @@
           return dateA - dateB;
         });
         
-        // 位置情報がある投稿のみフィルタリング
-        const postsWithLocation = posts.filter(post => 
-          post.postLocationLat && post.postLocationLng
-        );
+        // 位置情報がある投稿のみフィルタリングし、数値に変換
+        const postsWithLocation = posts
+          .map(post => {
+            const lat = parseFloat(post.postLocationLat);
+            const lng = parseFloat(post.postLocationLng);
+            if (isNaN(lat) || isNaN(lng)) {
+              return null;
+            }
+            return {
+              ...post,
+              postLocationLat: lat,
+              postLocationLng: lng
+            };
+          })
+          .filter(post => post !== null);
         
         if (postsWithLocation.length === 0) {
           console.log('位置情報のある投稿がありません');
