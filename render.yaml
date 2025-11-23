@@ -11,6 +11,10 @@ services:
         sync: false
       - key: PORT
         value: 10000
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_MAP_ID
+        sync: false
 
   - type: static
     name: isi2

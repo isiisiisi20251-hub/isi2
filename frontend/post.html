@@ -198,6 +198,27 @@
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3000' 
       : 'https://isi2-backend.onrender.com';
+    
+    // URLパラメータから石IDを取得
+    function getStoneIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stoneId = urlParams.get('stoneId');
+      
+      // URLパラメータがない場合は、ホスト名から取得を試みる
+      if (!stoneId) {
+        const host = window.location.hostname;
+        // isi2.onrender.com → stone-002
+        const match = host.match(/^isi(\d+)/);
+        if (match) {
+          const num = match[1].padStart(3, '0');
+          return `stone-${num}`;
+        }
+      }
+      
+      return stoneId;
+    }
+    
+    const stoneId = getStoneIdFromUrl();
 
     // Google Maps APIキーを取得して地図を初期化
     async function initMap() {
@@ -287,8 +308,14 @@
         return;
       }
       
+      if (!stoneId) {
+        alert('石IDが取得できませんでした。URLに?stoneId=stone-001のように指定してください。');
+        return;
+      }
+      
       try {
         const postData = {
+          stoneId: stoneId,
           nickname: nickname,
           comment: comment,
           postLocation: selectedLocation

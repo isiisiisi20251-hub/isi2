@@ -173,6 +173,29 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
+// データベースの中身を確認（開発用）
+app.get('/api/debug/posts', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        p.id,
+        p.stone_id as "stoneId",
+        p.nickname,
+        p.comment,
+        p.post_location_lat as "postLocationLat",
+        p.post_location_lng as "postLocationLng",
+        p.created_at as "createdAt"
+      FROM posts p
+      ORDER BY p.created_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('投稿取得エラー:', error);
+    res.status(500).json({ error: '投稿データの取得に失敗しました' });
+  }
+});
+
 // サーバー起動
 initDatabase().then(() => {
   app.listen(PORT, () => {
