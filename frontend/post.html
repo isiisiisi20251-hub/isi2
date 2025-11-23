@@ -111,6 +111,11 @@
       background-color: white;
     }
     
+    .input-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
     .submit-button-container {
       display: flex;
       justify-content: center;
@@ -172,6 +177,11 @@
       <div class="input-group">
         <label for="nickname">ニックネーム</label>
         <input type="text" id="nickname" name="nickname" required>
+      </div>
+      
+      <div class="input-group">
+        <label for="comment">投稿</label>
+        <textarea id="comment" name="comment" rows="4"></textarea>
       </div>
       
       <div class="submit-button-container">
@@ -292,6 +302,7 @@
     // 投稿を送信
     async function submitPost() {
       const nickname = document.getElementById('nickname').value.trim();
+      const comment = document.getElementById('comment').value.trim();
       
       if (!nickname) {
         alert('ニックネームを入力してください');
@@ -307,7 +318,7 @@
         const postData = {
           stoneId: stoneId,
           nickname: nickname,
-          comment: '', // optionalなので空文字
+          comment: comment || '', // optionalなので空でもOK
           postLocation: selectedLocation
         };
         
@@ -325,6 +336,7 @@
           alert('投稿が完了しました');
           // フォームをリセット
           document.getElementById('nickname').value = '';
+          document.getElementById('comment').value = '';
           // マーカーをデフォルト位置に戻す
           if (marker && map) {
             const defaultLocation = { lat: 35.7175, lng: 139.7733 };
