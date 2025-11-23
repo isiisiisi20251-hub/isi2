@@ -207,6 +207,7 @@
     let lastHeightAdjustTime = 0; // 最後に高さ調整した時間
     let backgroundWidth = 0; // バックグラウンド画像の幅
     let backgroundHeight = 0; // バックグラウンド画像の高さ
+    let totalPostsCount = 0; // 投稿の総数（上方向パディング計算用）
     
     // 各石のテキストボックス情報
     const stoneTextAreas = {
@@ -381,6 +382,34 @@
       adjustContainerHeight();
     }
     
+    // 上方向のパディングを設定
+    function setTopPadding() {
+      const container = document.getElementById('canvas-container');
+      
+      // 現在作成されている石の数を取得
+      const stonesCount = stones.length;
+      
+      if (stonesCount === 0) {
+        // 石がまだ作成されていない場合は、投稿数を取得して計算
+        // この関数は後で呼ばれるので、その時点で石の数が確定している
+        return;
+      }
+      
+      // すべての石の高さの合計を計算
+      let totalStoneHeight = 0;
+      stones.forEach(stone => {
+        totalStoneHeight += stone.height;
+      });
+      
+      // 石の高さの合計 × 2倍 + caption.pngの高さ
+      const topPadding = totalStoneHeight * 2 + captionHeight;
+      
+      // 上方向のパディングを設定
+      container.style.paddingTop = `${topPadding}px`;
+      
+      console.log(`上方向パディングを設定: ${topPadding}px (石の高さ合計: ${totalStoneHeight}px × 2 + caption高さ: ${captionHeight}px)`);
+    }
+    
     // 投稿データを取得して石を生成
     async function loadPostsAndCreateStones() {
       if (!stoneId) {
@@ -399,6 +428,9 @@
         
         // コメントがある投稿のみをフィルタリング（ニックネームだけの投稿は除外）
         const postsWithComments = posts.filter(post => post.comment && post.comment.trim().length > 0);
+        
+        // 投稿の総数を保存
+        totalPostsCount = postsWithComments.length;
         
         // 時系列順（古い順）にソート
         postsWithComments.sort((a, b) => {
@@ -609,6 +641,14 @@
           stoneName: selectedStoneName,
           textArea: textAreaInfo
         });
+        
+        // すべての石が作成されたかをチェック
+        if (stones.length === totalPostsCount && totalPostsCount > 0) {
+          // すべての石が作成されたので、上方向パディングを設定
+          setTimeout(() => {
+            setTopPadding();
+          }, 100); // 少し待ってから設定（すべての石が確実に作成されるように）
+        }
       };
       
       // 画像が読み込まれている場合は即座に作成、そうでなければ読み込みを待つ
